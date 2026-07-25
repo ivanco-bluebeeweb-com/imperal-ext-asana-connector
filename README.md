@@ -44,12 +44,19 @@ line — for people holding separate personal and client tokens.
 `list_users`, `list_teams`, `check_access`
 
 **Writing** — `connect_account`, `create_task`, `update_task`, `complete_task`,
-`move_task`, `add_comment`, `create_project`, `create_section`
+`move_task`, `add_comment`, `create_project`, `create_section`,
+`set_task_dependency`, `set_task_followers`, `set_task_tags`
 
 **Destructive** — `delete_task` (confirmation-gated; Asana keeps deleted tasks
 recoverable for 30 days)
 
 ## Asana constraints worth knowing
+
+**`start_on` needs `due_on` in the SAME request.** Not merely present on the
+task -- setting a start date on a task that already had a due date still fails
+with "You must provide `due_on` or `due_at` when setting `start_on`". Found on
+a live call, not by any mock. `update_task` therefore reads the existing due
+date and echoes it back unchanged.
 
 These are API facts that shape the connector's behaviour, not design choices:
 

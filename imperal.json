@@ -3111,6 +3111,429 @@
       "long_running": false,
       "scopes": [],
       "owner_chat_tool": "asana"
+    },
+    {
+      "name": "set_task_dependency",
+      "description": "Make one task wait for another (or remove that dependency). This is how task order is expressed -- a comment saying 'do this first' cannot be acted on by a timeline.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "asana.task.dependency_changed"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "description": "Order between two tasks.\n\nSequence was previously expressible only in PROSE -- a comment saying \"do\nthis one first\" -- which no timeline, no sorting and no automation can act\non. Asana models it as dependencies, so this does too.",
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "task": {
+            "description": "The task that waits (name or gid)",
+            "title": "Task",
+            "type": "string"
+          },
+          "depends_on": {
+            "description": "The task that must finish first (name or gid). Separate several with commas.",
+            "title": "Depends On",
+            "type": "string"
+          },
+          "remove": {
+            "default": false,
+            "description": "Set true to REMOVE the dependency instead of adding it",
+            "title": "Remove",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "task",
+          "depends_on"
+        ],
+        "title": "TaskDependencyParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Outcome of a write, phrased so the narrator can state what changed.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "action": {
+            "default": "",
+            "title": "Action",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WriteResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "asana-connector.set_task_dependency",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "set_task_followers",
+      "description": "Add or remove followers on a task -- the people who get notified about it without being the assignee.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "asana.task.followers_changed"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "description": "Who gets notified about a task.\n\nAssignee answers \"who does it\"; followers answer \"who needs to know\" --\nthe client, the architect, the site manager. Without this a task could be\ncreated but nobody could be kept in the loop on it.",
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "task": {
+            "description": "Task to change (name or gid)",
+            "title": "Task",
+            "type": "string"
+          },
+          "people": {
+            "description": "People to add or remove, by name or email. Separate several with commas. 'me' works.",
+            "title": "People",
+            "type": "string"
+          },
+          "remove": {
+            "default": false,
+            "description": "Set true to REMOVE these followers instead of adding them",
+            "title": "Remove",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "task",
+          "people"
+        ],
+        "title": "TaskFollowersParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Outcome of a write, phrased so the narrator can state what changed.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "action": {
+            "default": "",
+            "title": "Action",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WriteResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "asana-connector.set_task_followers",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "set_task_tags",
+      "description": "Add or remove tags on a task. A tag that does not exist yet is created.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "asana.task.tags_changed"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "description": "Tags on a task.\n\nTags were readable but not writable, so a connector could show how work is\ncategorised and never categorise any.",
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "task": {
+            "description": "Task to change (name or gid)",
+            "title": "Task",
+            "type": "string"
+          },
+          "tags": {
+            "description": "Tag names, comma-separated. A tag that does not exist yet is created in the workspace.",
+            "title": "Tags",
+            "type": "string"
+          },
+          "remove": {
+            "default": false,
+            "description": "Set true to REMOVE these tags instead of adding them",
+            "title": "Remove",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "task",
+          "tags"
+        ],
+        "title": "TaskTagsParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Outcome of a write, phrased so the narrator can state what changed.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "action": {
+            "default": "",
+            "title": "Action",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WriteResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "asana-connector.set_task_tags",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
     }
   ],
   "signals": [],

@@ -529,3 +529,103 @@ async def test_clear_due_and_clear_assignee_actually_do_something(connected_ctx,
     body = [c for c in http.calls if c["method"] == "PUT"][-1]["json"]["data"]
     assert body["due_on"] is None
     assert body["assignee"] is None
+
+
+# --- dependencies, followers, tags ------------------------------------------
+
+async def test_dependency_links_tasks_by_name(connected_ctx, http):
+    """Order as DATA, not prose.
+
+    The KS launch plan had to say "do the analytics task first" in a comment,
+    because there was no way to express sequence. A comment cannot be sorted,
+    filtered or shown on a timeline.
+    """
+    from models import TaskDependencyParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope({}))                 # addDependencies
+
+    out = await hw.set_task_dependency(connected_ctx, TaskDependencyParams(
+        task="1201234567", depends_on="1209876543"))
+    assert _ok(out), _text(out)
+
+    post = [c for c in http.calls if c["method"] == "POST"][-1]
+    assert "addDependencies" in post["url"]
+    assert post["json"]["data"]["dependencies"] == ["1209876543"]
+
+
+async def test_dependency_removal_uses_the_other_endpoint(connected_ctx, http):
+    """Asana has separate add/remove routes -- a flag must not silently add."""
+    from models import TaskDependencyParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope({}))
+
+    out = await hw.set_task_dependency(connected_ctx, TaskDependencyParams(
+        task="1201234567", depends_on="1209876543", remove=True))
+    assert _ok(out), _text(out)
+    assert "removeDependencies" in http.calls[-1]["url"]
+
+
+async def test_a_task_cannot_depend_on_itself(connected_ctx, http):
+    """A self-dependency is a deadlock Asana would happily store."""
+    from models import TaskDependencyParams
+
+    http.push(envelope(me_payload()))
+
+    out = await hw.set_task_dependency(connected_ctx, TaskDependencyParams(
+        task="1201234567", depends_on="1201234567"))
+    assert not _ok(out)
+    assert "itself" in _text(out).lower()
+    assert not [c for c in http.calls if "Dependencies" in c["url"]]
+
+
+async def test_followers_are_added_by_name(connected_ctx, http):
+    """Assignee is who does it; followers are who needs to know."""
+    from models import TaskFollowersParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope({}))                 # addFollowers
+
+    out = await hw.set_task_followers(connected_ctx, TaskFollowersParams(
+        task="1201234567", people="me"))
+    assert _ok(out), _text(out)
+
+    post = [c for c in http.calls if c["method"] == "POST"][-1]
+    assert "addFollowers" in post["url"]
+    assert post["json"]["data"]["followers"] == ["me"]
+
+
+async def test_adding_an_unknown_tag_creates_it(connected_ctx, http):
+    """Otherwise "tag this urgent" fails in the one workspace that has never
+    used the word -- precisely where it is being introduced."""
+    from models import TaskTagsParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope([]))                                 # tag typeahead: none
+    http.push(envelope({"gid": "77", "name": "urgent"}))    # POST /tags
+    http.push(envelope({}))                                 # addTag
+
+    out = await hw.set_task_tags(connected_ctx, TaskTagsParams(
+        task="1201234567", tags="urgent"))
+    assert _ok(out), _text(out)
+
+    urls = [c["url"] for c in http.calls]
+    assert any(u.endswith("/tags") for u in urls), urls
+    assert any("addTag" in u for u in urls), urls
+
+
+async def test_removing_an_unknown_tag_creates_nothing(connected_ctx, http):
+    """Inventing a tag in order to detach it would be absurd -- and would
+    leave litter in the workspace on every typo."""
+    from models import TaskTagsParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope([]))                    # tag typeahead: none
+
+    out = await hw.set_task_tags(connected_ctx, TaskTagsParams(
+        task="1201234567", tags="ghost", remove=True))
+    assert not _ok(out)
+    assert "nothing to remove" in _text(out).lower()
+    assert not any(c["method"] == "POST" and c["url"].endswith("/tags")
+                   for c in http.calls)

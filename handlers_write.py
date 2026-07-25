@@ -37,6 +37,9 @@ from models import (
     CreateTaskParams,
     DeleteTaskParams,
     MoveTaskParams,
+    TaskDependencyParams,
+    TaskFollowersParams,
+    TaskTagsParams,
     UpdateTaskParams,
     WriteResult,
 )
@@ -631,3 +634,214 @@ async def create_section(ctx, params: CreateSectionParams) -> ActionResult:
         _result(ao.gid_of(section), ao.name_of(section), "",
                 f"Section added to '{project_name}'", action="created"),
         f"Added section '{ao.name_of(section)}' to '{project_name}'")
+
+
+# --------------------------- ordering, people, tags -------------------------
+#
+# These three close the gap between "a task exists" and "a plan exists".
+# Sequence, audience and category were all readable or expressible only in
+# prose before: a comment saying "do this first" is invisible to a timeline,
+# and a tag that can be listed but never set is decoration.
+#
+# All three take COMMA-SEPARATED NAMES, because that is how a person says it.
+# Each name is resolved individually, and a partial success is reported as a
+# partial success -- claiming "linked 3 tasks" when one resolved is worse than
+# a clear error, since the user would never go back and check.
+
+
+def _split_names(raw: str) -> list[str]:
+    """'a, b , c' -> ['a', 'b', 'c'], with blanks dropped."""
+    return [part.strip() for part in (raw or "").split(",") if part.strip()]
+
+
+@chat.function(
+    "set_task_dependency",
+    "Make one task wait for another (or remove that dependency). This is how "
+    "task order is expressed -- a comment saying 'do this first' cannot be "
+    "acted on by a timeline.",
+    action_type="write", chain_callable=True,
+    data_model=WriteResult,
+    event="asana-connector.set_task_dependency",
+    effects=["asana.task.dependency_changed"],
+)
+async def set_task_dependency(ctx, params: TaskDependencyParams) -> ActionResult:
+    """Add or remove dependencies on a task.
+
+    Asana has two endpoints, `addDependencies` and `removeDependencies`, both
+    taking a list. The blocking tasks are named, not gid'd, so each one is
+    resolved first -- and an unresolvable name aborts BEFORE any link is made,
+    so the operation is all-or-nothing rather than half-applied.
+    """
+    token, workspace, err = await _resolve(ctx, params.workspace)
+    if err:
+        return err
+
+    workspace_gid = workspace.get("gid", "")
+    target = await shared.resolve_task(ctx, token, workspace_gid, params.task)
+    if not target.get("ok"):
+        return _from_envelope(target)
+
+    names = _split_names(params.depends_on)
+    if not names:
+        return _error("Name at least one task that must finish first.",
+                      ac.ASANA_VALIDATION_FAILED)
+
+    gids: list[str] = []
+    for name in names:
+        found = await shared.resolve_task(ctx, token, workspace_gid, name)
+        if not found.get("ok"):
+            # Abort before writing anything: a half-built dependency chain is
+            # harder to notice than a refusal.
+            return _from_envelope(found)
+        if found["gid"] == target["gid"]:
+            return _error(
+                "A task cannot depend on itself.", ac.ASANA_VALIDATION_FAILED)
+        gids.append(found["gid"])
+
+    verb = "removeDependencies" if params.remove else "addDependencies"
+    out = await ac.request(ctx, "POST", f"tasks/{target['gid']}/{verb}", token,
+                           data={"dependencies": gids})
+    if not out.get("ok"):
+        return _from_envelope(out)
+
+    task_name = target.get("name") or params.task
+    word = "no longer waits for" if params.remove else "now waits for"
+    listed = ", ".join(f"'{n}'" for n in names)
+    return ActionResult.success(
+        _result(target["gid"], task_name, "",
+                f"{'Removed' if params.remove else 'Added'} "
+                f"{len(gids)} dependency/ies",
+                action="dependency_removed" if params.remove
+                else "dependency_added"),
+        f"'{task_name}' {word} {listed}")
+
+
+@chat.function(
+    "set_task_followers",
+    "Add or remove followers on a task -- the people who get notified about "
+    "it without being the assignee.",
+    action_type="write", chain_callable=True,
+    data_model=WriteResult,
+    event="asana-connector.set_task_followers",
+    effects=["asana.task.followers_changed"],
+)
+async def set_task_followers(ctx, params: TaskFollowersParams) -> ActionResult:
+    """Add or remove followers.
+
+    Assignee is "who does it"; followers are "who needs to know". Asana takes
+    a list of user gids, so each name or email is resolved first -- `me`
+    included, which `resolve_user` special-cases.
+    """
+    token, workspace, err = await _resolve(ctx, params.workspace)
+    if err:
+        return err
+
+    workspace_gid = workspace.get("gid", "")
+    target = await shared.resolve_task(ctx, token, workspace_gid, params.task)
+    if not target.get("ok"):
+        return _from_envelope(target)
+
+    names = _split_names(params.people)
+    if not names:
+        return _error("Name at least one person.", ac.ASANA_VALIDATION_FAILED)
+
+    gids: list[str] = []
+    for name in names:
+        who = await shared.resolve_user(ctx, token, workspace_gid, name)
+        if not who.get("ok"):
+            return _from_envelope(who)
+        gids.append(who["gid"])
+
+    verb = "removeFollowers" if params.remove else "addFollowers"
+    out = await ac.request(ctx, "POST", f"tasks/{target['gid']}/{verb}", token,
+                           data={"followers": gids})
+    if not out.get("ok"):
+        return _from_envelope(out)
+
+    task_name = target.get("name") or params.task
+    listed = ", ".join(names)
+    return ActionResult.success(
+        _result(target["gid"], task_name, "",
+                f"{'Removed' if params.remove else 'Added'} "
+                f"{len(gids)} follower(s)",
+                action="followers_removed" if params.remove
+                else "followers_added"),
+        f"{'Removed' if params.remove else 'Added'} {listed} "
+        f"{'from' if params.remove else 'to'} '{task_name}'")
+
+
+@chat.function(
+    "set_task_tags",
+    "Add or remove tags on a task. A tag that does not exist yet is created.",
+    action_type="write", chain_callable=True,
+    data_model=WriteResult,
+    event="asana-connector.set_task_tags",
+    effects=["asana.task.tags_changed"],
+)
+async def set_task_tags(ctx, params: TaskTagsParams) -> ActionResult:
+    """Add or remove tags, creating a tag that does not exist yet.
+
+    Tags were readable but not writable. Asana's add endpoint takes a tag gid,
+    not a name, so an unknown name has to be created first -- otherwise
+    "tag this urgent" would fail on the one workspace that has never used the
+    word, which is exactly the workspace where it is being introduced.
+
+    Creating is only correct when ADDING. Removing an unknown tag creates
+    nothing: there is nothing to remove, and inventing a tag in order to
+    detach it would be absurd.
+    """
+    token, workspace, err = await _resolve(ctx, params.workspace)
+    if err:
+        return err
+
+    workspace_gid = workspace.get("gid", "")
+    target = await shared.resolve_task(ctx, token, workspace_gid, params.task)
+    if not target.get("ok"):
+        return _from_envelope(target)
+
+    names = _split_names(params.tags)
+    if not names:
+        return _error("Name at least one tag.", ac.ASANA_VALIDATION_FAILED)
+
+    resolved: list[tuple[str, str]] = []
+    for name in names:
+        found = await acct.resolve_target(ctx, token, workspace_gid, name,
+                                          resource_type="tag")
+        if found.get("ok"):
+            resolved.append((name, found["gid"]))
+            continue
+
+        if params.remove:
+            return _error(
+                f"There is no tag named '{name}' in this workspace, so there "
+                "is nothing to remove.", ac.ASANA_TARGET_NOT_FOUND)
+
+        # Only a genuinely absent tag is worth creating. An ambiguous match or
+        # a transport failure must surface as itself.
+        if found.get("code") != ac.ASANA_TARGET_NOT_FOUND:
+            return _from_envelope(found)
+
+        made = await ac.request(ctx, "POST", "tags", token,
+                                data={"name": name, "workspace": workspace_gid},
+                                params={"opt_fields": "gid,name"})
+        if not made.get("ok"):
+            return _from_envelope(made)
+        resolved.append((name, ao.gid_of(made["data"])))
+
+    verb = "removeTag" if params.remove else "addTag"
+    for _, gid in resolved:
+        # Asana takes ONE tag per call here, unlike followers and dependencies.
+        out = await ac.request(ctx, "POST", f"tasks/{target['gid']}/{verb}",
+                               token, data={"tag": gid})
+        if not out.get("ok"):
+            return _from_envelope(out)
+
+    task_name = target.get("name") or params.task
+    listed = ", ".join(n for n, _ in resolved)
+    return ActionResult.success(
+        _result(target["gid"], task_name, "",
+                f"{'Removed' if params.remove else 'Added'} "
+                f"{len(resolved)} tag(s)",
+                action="tags_removed" if params.remove else "tags_added"),
+        f"{'Removed' if params.remove else 'Added'} tag(s) {listed} "
+        f"{'from' if params.remove else 'on'} '{task_name}'")

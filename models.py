@@ -208,6 +208,53 @@ class CreateSectionParams(WorkspaceScoped):
     name: str = Field(..., description="Section name")
 
 
+class TaskDependencyParams(WorkspaceScoped):
+    """Order between two tasks.
+
+    Sequence was previously expressible only in PROSE -- a comment saying "do
+    this one first" -- which no timeline, no sorting and no automation can act
+    on. Asana models it as dependencies, so this does too.
+    """
+    task: str = Field(..., description="The task that waits (name or gid)")
+    depends_on: str = Field(
+        ..., description="The task that must finish first (name or gid). "
+                         "Separate several with commas.")
+    remove: bool = Field(
+        False, description="Set true to REMOVE the dependency instead of "
+                           "adding it")
+
+
+class TaskFollowersParams(WorkspaceScoped):
+    """Who gets notified about a task.
+
+    Assignee answers "who does it"; followers answer "who needs to know" --
+    the client, the architect, the site manager. Without this a task could be
+    created but nobody could be kept in the loop on it.
+    """
+    task: str = Field(..., description="Task to change (name or gid)")
+    people: str = Field(
+        ..., description="People to add or remove, by name or email. "
+                         "Separate several with commas. 'me' works.")
+    remove: bool = Field(
+        False, description="Set true to REMOVE these followers instead of "
+                           "adding them")
+
+
+class TaskTagsParams(WorkspaceScoped):
+    """Tags on a task.
+
+    Tags were readable but not writable, so a connector could show how work is
+    categorised and never categorise any.
+    """
+    task: str = Field(..., description="Task to change (name or gid)")
+    tags: str = Field(
+        ..., description="Tag names, comma-separated. A tag that does not "
+                         "exist yet is created in the workspace.")
+    remove: bool = Field(
+        False, description="Set true to REMOVE these tags instead of adding "
+                           "them")
+
+
 # --------------------------- return entities ---------------------------
 
 class AsanaAccount(sdl.Entity):
