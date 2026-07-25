@@ -729,6 +729,28 @@ async def set_task_dependency(ctx, params: TaskDependencyParams) -> ActionResult
         return _from_envelope(out)
 
     task_name = target.get("name") or params.task
+
+    # Dependencies are a PAID-plan feature and the API mirrors the product, but
+    # a free workspace does not get an error: Asana answers 200 and stores
+    # nothing. Verified live -- the call reported success and the task came
+    # back with no dependencies at all. A write tool that cannot fail is worse
+    # than one that does, so the write is read back before it is believed.
+    if not params.remove:
+        check = await ac.request(
+            ctx, "GET", f"tasks/{target['gid']}", token,
+            params={"opt_fields": "dependencies.gid"})
+        if check.get("ok"):
+            stored = {ao.gid_of(item)
+                      for item in ((check.get("data") or {}).get(
+                          "dependencies") or [])}
+            if not stored.intersection(gids):
+                return _error(
+                    f"Asana accepted the request but stored no dependency on "
+                    f"'{task_name}'. Task dependencies are a paid-plan "
+                    f"feature, and on a free workspace the API returns "
+                    f"success while silently ignoring them. The order still "
+                    f"has to live in the task descriptions.",
+                    ac.ASANA_VALIDATION_FAILED)
     word = "no longer waits for" if params.remove else "now waits for"
     listed = ", ".join(f"'{n}'" for n in names)
     return ActionResult.success(

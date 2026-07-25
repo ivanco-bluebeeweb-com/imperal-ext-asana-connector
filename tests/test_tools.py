@@ -544,6 +544,7 @@ async def test_dependency_links_tasks_by_name(connected_ctx, http):
 
     http.push(envelope(me_payload()))
     http.push(envelope({}))                 # addDependencies
+    http.push(envelope({"dependencies": [{"gid": "1209876543"}]}))  # read-back
 
     out = await hw.set_task_dependency(connected_ctx, TaskDependencyParams(
         task="1201234567", depends_on="1209876543"))
@@ -648,6 +649,7 @@ async def test_a_task_name_containing_a_comma_is_not_split(connected_ctx, http):
     http.push(envelope([{"gid": "410", "name": whole}]))          # whole name
     http.push(envelope([{"gid": "410", "name": whole}]))          # resolve it
     http.push(envelope({}))                                       # addDependencies
+    http.push(envelope({"dependencies": [{"gid": "410"}]}))       # read-back
 
     out = await hw.set_task_dependency(connected_ctx, TaskDependencyParams(
         task="QA pass", depends_on=whole))
@@ -668,6 +670,7 @@ async def test_a_real_comma_separated_list_still_splits(connected_ctx, http):
     http.push(envelope([{"gid": "401", "name": "Fix title"}]))
     http.push(envelope([{"gid": "402", "name": "Add DKIM"}]))
     http.push(envelope({}))
+    http.push(envelope({"dependencies": [{"gid": "401"}, {"gid": "402"}]}))
 
     out = await hw.set_task_dependency(connected_ctx, TaskDependencyParams(
         task="QA pass", depends_on="Fix title, Add DKIM"))
@@ -701,3 +704,30 @@ async def test_get_task_shows_dependencies_and_followers(connected_ctx, http):
     assert data.blocked_by == "Instrument analytics", data
     assert data.blocking == "Go live", data
     assert data.followers == "Vlad Ivanco", data
+
+
+async def test_a_dependency_asana_silently_ignored_is_reported_as_failure(
+        connected_ctx, http):
+    """The worst failure mode: HTTP 200, nothing stored.
+
+    Task dependencies are a paid-plan feature and the API mirrors the product
+    limit -- but a free workspace gets no error. Asana answers 200 and drops
+    the write. Verified live: the tool reported "now waits for ..." and the
+    task came back with no dependencies at all.
+
+    A write tool that cannot fail teaches the user to trust a lie, so the
+    write is read back and a no-op is surfaced as the error it is.
+    """
+    from models import TaskDependencyParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope({}))                       # addDependencies -> 200 OK
+    http.push(envelope({"dependencies": []}))     # ...but nothing was stored
+
+    out = await hw.set_task_dependency(connected_ctx, TaskDependencyParams(
+        task="1201234567", depends_on="1209876543"))
+
+    assert not _ok(out)
+    text = _text(out).lower()
+    assert "paid" in text, text
+    assert "descriptions" in text, "tell the user what to do instead: " + text
