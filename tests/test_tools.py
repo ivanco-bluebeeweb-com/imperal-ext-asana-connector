@@ -486,6 +486,11 @@ async def test_update_task_accepts_a_start_when_the_task_already_has_a_due_date(
     assert body["due_on"] == "2026-08-03", (
         f"the existing due date must be echoed back: {body}")
 
+    # The summary is built from the `changed` list, so a branch that forgets to
+    # append leaves the user with a literal "Updated " and no idea what
+    # happened. Live, that is exactly what setting a start date returned.
+    assert "start date" in _text(out), _text(out)
+
     body = [c for c in http.calls if c["method"] == "PUT"][-1]["json"]["data"]
     assert body["start_on"] == "2026-08-01"
 

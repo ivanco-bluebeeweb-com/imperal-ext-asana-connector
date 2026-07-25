@@ -305,6 +305,9 @@ async def update_task(ctx, params: UpdateTaskParams) -> ActionResult:
                 field = "due_on" if existing.get("due_on") else "due_at"
                 data[field] = existing_due
         data["start_on"] = params.start.strip()
+        # Without this the reply reads "Updated " with an empty list -- the
+        # write succeeded but told the user nothing about what changed.
+        changed.append("start date")
 
     if not data:
         return _error(
