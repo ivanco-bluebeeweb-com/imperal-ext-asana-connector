@@ -368,3 +368,44 @@ def test_handlers_only_read_params_fields_that_exist_on_the_model():
 
     assert not offenders, "handlers read params fields that do not exist: " + \
         "; ".join(offenders)
+
+
+def test_entities_are_built_only_from_fields_they_declare():
+    """No silently dropped data.
+
+    pydantic IGNORES unknown keyword fields instead of raising, so a handler can
+    hand an entity five fields it never declared and get a perfectly valid,
+    perfectly empty object back. That is what `check_access` did in production:
+    workspace_name / projects_visible / people_visible / explanation all
+    vanished, and the only reason anyone noticed is that `premium_search` got a
+    bool where the model declares a str -- a type mismatch is loud, a name
+    mismatch is silent.
+
+    `AsanaTask` had the same hole: `start` and `parent` were fetched from Asana,
+    passed by the handler, and dropped on the floor of every single response.
+
+    This is the mirror of test_handlers_only_read_params_fields_that_exist:
+    that one guards READS off the params model, this one guards WRITES into the
+    entity models.
+    """
+    import models
+
+    offenders: list[str] = []
+    for module_name in ("handlers_read.py", "handlers_write.py", "panels.py"):
+        for node in ast.walk(_tree(module_name)):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
+            model = getattr(models, name, None)
+            if model is None or not hasattr(model, "model_fields"):
+                continue
+            allowed = set(model.model_fields)
+            for keyword in node.keywords:
+                if keyword.arg and keyword.arg not in allowed:
+                    offenders.append(
+                        f"{module_name}:{node.lineno} {name}(... {keyword.arg}=)")
+
+    assert not offenders, (
+        "these entity fields do not exist and would be silently dropped: "
+        + "; ".join(offenders))

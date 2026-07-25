@@ -703,17 +703,22 @@ async def check_access(ctx, params: CheckAccessParams) -> ActionResult:
         id=workspace_gid,
         title=f"Access in {workspace.get('name', 'Asana')}",
         account_name=str(account.get("user_name") or ""),
-        workspace_name=str(workspace.get("name") or ""),
-        workspaces_reachable=len(acct.flatten_workspaces(entries)),
-        projects_visible=project_count,
-        people_visible=people_count,
-        premium_search=premium,
-        explanation=f"{ACCESS_NOTE} {premium_note}",
+        # These names must match AccessReport EXACTLY. pydantic drops unknown
+        # fields without a word, so the previous names (workspace_name,
+        # projects_visible, people_visible, explanation) produced an empty
+        # report -- and `premium_search` took a bool where the model declares a
+        # string, which is the one mismatch loud enough to raise.
+        workspace=str(workspace.get("name") or ""),
+        workspace_count=len(acct.flatten_workspaces(entries)),
+        project_count=project_count,
+        user_count=people_count,
+        premium_search=premium_note,
+        note=ACCESS_NOTE,
     )
     summary = (
         f"Token for {report.account_name or 'this account'} reaches "
-        f"{report.workspaces_reachable} workspace(s); in "
-        f"{report.workspace_name or 'the selected workspace'}: "
+        f"{report.workspace_count} workspace(s); in "
+        f"{report.workspace or 'the selected workspace'}: "
         f"{project_count} project(s), {people_count} person/people"
     )
     if broken:

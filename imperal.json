@@ -552,6 +552,16 @@
             "title": "Due",
             "type": "string"
           },
+          "start": {
+            "default": "",
+            "title": "Start",
+            "type": "string"
+          },
+          "parent": {
+            "default": "",
+            "title": "Parent",
+            "type": "string"
+          },
           "projects": {
             "default": "",
             "title": "Projects",
@@ -889,6 +899,16 @@
             "title": "Due",
             "type": "string"
           },
+          "start": {
+            "default": "",
+            "title": "Start",
+            "type": "string"
+          },
+          "parent": {
+            "default": "",
+            "title": "Parent",
+            "type": "string"
+          },
           "projects": {
             "default": "",
             "title": "Projects",
@@ -1054,6 +1074,16 @@
           "due": {
             "default": "",
             "title": "Due",
+            "type": "string"
+          },
+          "start": {
+            "default": "",
+            "title": "Start",
+            "type": "string"
+          },
+          "parent": {
+            "default": "",
+            "title": "Parent",
             "type": "string"
           },
           "projects": {

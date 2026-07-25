@@ -237,6 +237,12 @@ class AsanaTask(sdl.Entity):
     completed: bool = False
     assignee: str = ""
     due: str = ""
+    # `start` and `parent` are requested in TASK_FIELDS and were being passed
+    # by the handler, but the model never declared them -- pydantic DROPS
+    # unknown keyword fields silently, so every task rendered without its start
+    # date and without saying it was a subtask. No error, just missing facts.
+    start: str = ""
+    parent: str = ""
     projects: str = ""
     tags: str = ""
     notes: str = ""

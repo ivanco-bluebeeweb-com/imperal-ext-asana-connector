@@ -300,3 +300,64 @@ async def test_no_token_configured_tells_the_user_where_to_paste_one(ctx, http):
     assert not _ok(out)
     assert _code(out) == ac.ASANA_TOKEN_MISSING
     assert http.calls == []
+
+
+# --- check_access -----------------------------------------------------------
+
+async def test_check_access_reports_what_the_token_reaches(connected_ctx, http):
+    """The tool that answers "why can't you see my task" -- it must not be the
+    one that breaks.
+
+    It shipped raising a pydantic ValidationError on every single call, because
+    nothing here ever executed it. A structural test caught the field names; only
+    running it proves the report is actually populated.
+    """
+    from models import CheckAccessParams
+
+    http.push(envelope(me_payload(workspaces=[{"gid": "100", "name": "Acme"}])))
+    http.push(envelope([project_payload(gid="500", name="Website"),
+                        project_payload(gid="501", name="Brand")]))
+    http.push(envelope([{"gid": "9001"}, {"gid": "9002"}]))
+    http.push(envelope([task_payload()]))          # premium probe succeeds
+
+    out = await hr.check_access(connected_ctx, CheckAccessParams())
+    assert _ok(out), _text(out)
+
+    report = out.data
+    assert report.account_name == "Vlad Ivanco"
+    assert report.workspace == "Acme"
+    assert report.workspace_count == 1
+    assert report.project_count == 2
+    assert report.user_count == 2
+    # premium_search is PROSE, not a flag: the model declares a string, and a
+    # bool here is what made every call fail.
+    assert isinstance(report.premium_search, str)
+    assert report.premium_search
+    assert "acme" in _text(out).lower()
+
+
+async def test_check_access_says_when_advanced_search_is_unavailable(connected_ctx, http):
+    """A free plan must be reported as a plan limit, not as a failure."""
+    from models import CheckAccessParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope([]))
+    http.push(envelope([]))
+    http.push(error_payload("payment required"), status=402)
+
+    out = await hr.check_access(connected_ctx, CheckAccessParams())
+    assert _ok(out)
+    assert "not available on this plan" in out.data.premium_search.lower()
+
+
+async def test_task_entity_keeps_its_start_date_and_parent(connected_ctx, http):
+    """Fields fetched from Asana must survive into the rendered entity."""
+    http.push(envelope(me_payload()))
+    http.push(envelope(task_payload(
+        gid="1201", start_on="2026-07-20",
+        parent={"gid": "9", "name": "Launch ksrenovationgroup.com"})))
+
+    out = await hr.get_task(connected_ctx, GetTaskParams(task="1201234567"))
+    assert _ok(out)
+    assert out.data.start == "2026-07-20"
+    assert out.data.parent == "Launch ksrenovationgroup.com"
