@@ -577,6 +577,11 @@
             "title": "Followers",
             "type": "string"
           },
+          "custom_fields": {
+            "default": "",
+            "title": "Custom Fields",
+            "type": "string"
+          },
           "projects": {
             "default": "",
             "title": "Projects",
@@ -939,6 +944,11 @@
             "title": "Followers",
             "type": "string"
           },
+          "custom_fields": {
+            "default": "",
+            "title": "Custom Fields",
+            "type": "string"
+          },
           "projects": {
             "default": "",
             "title": "Projects",
@@ -1129,6 +1139,11 @@
           "followers": {
             "default": "",
             "title": "Followers",
+            "type": "string"
+          },
+          "custom_fields": {
+            "default": "",
+            "title": "Custom Fields",
             "type": "string"
           },
           "projects": {

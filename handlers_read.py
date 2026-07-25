@@ -99,6 +99,8 @@ def _task_entity(task: dict) -> AsanaTask:
         blocking=", ".join(ao.name_list(task, "dependents")),
         followers=", ".join(ao.name_list(task, "followers")),
         tags=", ".join(ao.name_list(task, "tags")),
+        custom_fields="; ".join(f"{label}: {shown}"
+                                for label, shown in ao.custom_field_pairs(task)),
         subtask_count=int(task.get("num_subtasks") or 0),
         url=str(task.get("permalink_url") or ""),
         modified=str(task.get("modified_at") or ""),

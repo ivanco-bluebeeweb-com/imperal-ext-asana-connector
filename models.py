@@ -303,6 +303,8 @@ class AsanaTask(sdl.Entity):
     blocked_by: str = ""
     blocking: str = ""
     followers: str = ""
+    # Priority, status, effort, budget -- whatever this workspace tracks.
+    custom_fields: str = ""
     projects: str = ""
     tags: str = ""
     notes: str = ""

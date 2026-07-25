@@ -28,6 +28,10 @@ TASK_FIELDS = ",".join([
     # readable too -- otherwise a write cannot be verified by a read.
     "dependencies.name", "dependencies.gid", "dependents.name",
     "followers.name",
+    # Where real workspaces keep priority, status, effort and budget.
+    # `display_value` is Asana's own rendering of any field type, so the
+    # connector does not need six parsers to read six value shapes.
+    "custom_fields.name", "custom_fields.display_value",
 ])
 
 TASK_COMPACT_FIELDS = ",".join([
@@ -107,6 +111,35 @@ def name_list(item, key: str) -> list[str]:
             if isinstance(v, dict) and v.get("name")]
 
 
+def custom_field_pairs(task) -> list[tuple[str, str]]:
+    """Custom fields as (label, value) using Asana's own rendering.
+
+    Custom fields are where real workspaces keep priority, status, effort and
+    budget -- so a task read WITHOUT them is a task read without half its
+    meaning. There are six value types (enum, multi-enum, text, number, date,
+    people) and hand-parsing each one would be six chances to be subtly wrong.
+
+    Asana already solves this: `display_value` is the API's own human-readable
+    string for ANY type, and the docs recommend it for exactly this case. A
+    field with no value set is skipped rather than shown as empty noise.
+    """
+    if not isinstance(task, dict):
+        return []
+    values = task.get("custom_fields")
+    if not isinstance(values, list):
+        return []
+    pairs = []
+    for field in values:
+        if not isinstance(field, dict):
+            continue
+        label = str(field.get("name") or "").strip()
+        shown = field.get("display_value")
+        shown = "" if shown is None else str(shown).strip()
+        if label and shown:
+            pairs.append((label, shown))
+    return pairs
+
+
 def gid_list(item, key: str) -> list[str]:
     """Gids from a list-valued field.
 
@@ -179,6 +212,9 @@ def render_task(task: dict) -> str:
     tags = name_list(task, "tags")
     if tags:
         parts.append("tags: " + ", ".join(tags))
+
+    for label, shown in custom_field_pairs(task):
+        parts.append(f"{label}: {shown}")
 
     subtasks = task.get("num_subtasks")
     if isinstance(subtasks, int) and subtasks > 0:

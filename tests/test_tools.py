@@ -779,3 +779,56 @@ async def test_an_unreadable_linked_task_is_not_silently_dropped(
     assert _ok(out), _text(out)
     assert out.data.blocked_by, "an unreadable link must not vanish"
     assert "cannot read" in out.data.blocked_by
+
+
+async def test_custom_fields_are_read_via_asanas_own_rendering(
+        connected_ctx, http):
+    """Custom fields are where a real workspace keeps its meaning.
+
+    Priority, status, effort, budget -- a task read without them is a task
+    read without half its content. Asana has six value types; `display_value`
+    is its own string rendering of any of them, which is why this connector
+    does not carry six parsers that could each be subtly wrong.
+    """
+    from models import GetTaskParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope(dict(
+        task_payload(gid="300", name="QA pass"),
+        custom_fields=[
+            {"name": "Priority", "display_value": "High"},        # enum
+            {"name": "Estimate", "display_value": "6"},           # number
+            {"name": "Client", "display_value": "KS Renovation"},  # text
+        ],
+    )))
+
+    out = await hr.get_task(connected_ctx, GetTaskParams(task="1201234567"))
+    assert _ok(out), _text(out)
+    assert "Priority: High" in out.data.custom_fields, out.data.custom_fields
+    assert "Estimate: 6" in out.data.custom_fields, out.data.custom_fields
+    assert "Client: KS Renovation" in out.data.custom_fields
+
+
+async def test_an_unset_custom_field_is_not_rendered_as_noise(
+        connected_ctx, http):
+    """A field with no value is not information.
+
+    Asana attaches EVERY field defined on the project to EVERY task, set or
+    not. Rendering the empty ones would bury the two that matter under a dozen
+    'Budget: ' fragments -- technically complete, practically unreadable.
+    """
+    from models import GetTaskParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope(dict(
+        task_payload(gid="300", name="QA pass"),
+        custom_fields=[
+            {"name": "Priority", "display_value": "High"},
+            {"name": "Budget", "display_value": None},   # never filled in
+            {"name": "Owner", "display_value": ""},      # cleared
+        ],
+    )))
+
+    out = await hr.get_task(connected_ctx, GetTaskParams(task="1201234567"))
+    assert _ok(out), _text(out)
+    assert out.data.custom_fields == "Priority: High", out.data.custom_fields
