@@ -46,8 +46,12 @@ _from_envelope = shared.from_envelope
 _resolve = shared.resolve
 
 
-def _result(gid: str, title: str, url: str, detail: str) -> WriteResult:
-    return WriteResult(id=gid, title=title, gid=gid, url=url, detail=detail)
+def _result(gid: str, title: str, url: str, detail: str,
+            action: str = "") -> WriteResult:
+    # `name` and `action` are declared on WriteResult and were never filled, so
+    # a chained tool reading the result of a write got blanks.
+    return WriteResult(id=gid, title=title, gid=gid, name=title, url=url,
+                       detail=detail, action=action)
 
 
 @chat.function(
@@ -183,7 +187,7 @@ async def create_task(ctx, params: CreateTaskParams) -> ActionResult:
     gid = ao.gid_of(task)
     return ActionResult.success(
         _result(gid, ao.name_of(task), str(task.get("permalink_url") or ""),
-                f"Created in {home}"),
+                f"Created in {home}", action="created"),
         f"Created task '{ao.name_of(task)}' in {home}")
 
 
@@ -248,7 +252,7 @@ async def update_task(ctx, params: UpdateTaskParams) -> ActionResult:
     return ActionResult.success(
         _result(ao.gid_of(task), ao.name_of(task),
                 str(task.get("permalink_url") or ""),
-                f"Updated {', '.join(changed)}"),
+                f"Updated {', '.join(changed)}", action="updated"),
         f"Updated {', '.join(changed)} on '{ao.name_of(task)}'")
 
 
@@ -281,7 +285,8 @@ async def complete_task(ctx, params: CompleteTaskParams) -> ActionResult:
     word = "completed" if params.completed else "reopened"
     return ActionResult.success(
         _result(ao.gid_of(task), ao.name_of(task),
-                str(task.get("permalink_url") or ""), f"Task {word}"),
+                str(task.get("permalink_url") or ""), f"Task {word}",
+                action=word),
         f"Marked '{ao.name_of(task)}' {word}")
 
 
@@ -378,7 +383,7 @@ async def move_task(ctx, params: MoveTaskParams) -> ActionResult:
         where += f" / section '{params.section}'"
     return ActionResult.success(
         _result(target["gid"], target.get("name", "") or "task", "",
-                f"Added to {where}"),
+                f"Added to {where}", action="moved"),
         f"Moved the task to {where}")
 
 
@@ -416,7 +421,7 @@ async def delete_task(ctx, params: DeleteTaskParams) -> ActionResult:
         return _from_envelope(out)
 
     return ActionResult.success(
-        _result(target["gid"], name, "", "Deleted"),
+        _result(target["gid"], name, "", "Deleted", action="deleted"),
         f"Deleted '{name}'. Asana keeps deleted tasks recoverable for 30 days.")
 
 
@@ -449,7 +454,8 @@ async def add_comment(ctx, params: AddCommentParams) -> ActionResult:
 
     name = target.get("name") or "the task"
     return ActionResult.success(
-        _result(ao.gid_of(out["data"]), name, "", "Comment added"),
+        _result(ao.gid_of(out["data"]), name, "", "Comment added",
+                action="commented"),
         f"Commented on '{name}'")
 
 
@@ -509,7 +515,8 @@ async def create_project(ctx, params: CreateProjectParams) -> ActionResult:
     project = out["data"]
     return ActionResult.success(
         _result(ao.gid_of(project), ao.name_of(project),
-                str(project.get("permalink_url") or ""), "Project created"),
+                str(project.get("permalink_url") or ""), "Project created",
+                action="created"),
         f"Created project '{ao.name_of(project)}' in "
         f"{workspace.get('name', 'the workspace')}")
 
@@ -546,5 +553,5 @@ async def create_section(ctx, params: CreateSectionParams) -> ActionResult:
     project_name = project.get("name") or params.project
     return ActionResult.success(
         _result(ao.gid_of(section), ao.name_of(section), "",
-                f"Section added to '{project_name}'"),
+                f"Section added to '{project_name}'", action="created"),
         f"Added section '{ao.name_of(section)}' to '{project_name}'")

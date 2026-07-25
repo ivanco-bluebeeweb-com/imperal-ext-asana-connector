@@ -79,10 +79,15 @@ _NO_TOKEN_HINT = (
 def _task_entity(task: dict) -> AsanaTask:
     """One task payload -> the entity the panel and chat render."""
     gid = ao.gid_of(task)
+    name = ao.name_of(task)
     return AsanaTask(
         id=gid,
-        title=ao.name_of(task) or "(unnamed task)",
+        title=name or "(unnamed task)",
         gid=gid,
+        # `title` is what the card renders; `name` is what the NEXT tool in a
+        # chain reads. Declaring it and never filling it hands the chain an
+        # empty string instead of the task's name.
+        name=name,
         completed=bool(task.get("completed")),
         assignee=ao.nested_name(task, "assignee"),
         due=str(task.get("due_on") or task.get("due_at") or ""),
@@ -100,10 +105,12 @@ def _task_entity(task: dict) -> AsanaTask:
 
 def _project_entity(project: dict) -> AsanaProject:
     gid = ao.gid_of(project)
+    name = ao.name_of(project)
     return AsanaProject(
         id=gid,
-        title=ao.name_of(project) or "(unnamed project)",
+        title=name or "(unnamed project)",
         gid=gid,
+        name=name,
         archived=bool(project.get("archived")),
         owner=ao.nested_name(project, "owner"),
         team=ao.nested_name(project, "team"),
@@ -711,6 +718,12 @@ async def check_access(ctx, params: CheckAccessParams) -> ActionResult:
         workspace=str(workspace.get("name") or ""),
         workspace_count=len(acct.flatten_workspaces(entries)),
         project_count=project_count,
+        # The names are already fetched above; leaving this empty made the
+        # report say "1 project" without saying WHICH -- the one question
+        # "what can you actually see?" exists to answer.
+        reachable_projects=", ".join(
+            ao.name_of(p) for p in (projects.get("results") or [])[:12]
+            if ao.name_of(p)),
         user_count=people_count,
         premium_search=premium_note,
         note=ACCESS_NOTE,

@@ -409,3 +409,44 @@ def test_entities_are_built_only_from_fields_they_declare():
     assert not offenders, (
         "these entity fields do not exist and would be silently dropped: "
         + "; ".join(offenders))
+
+
+def test_declared_entity_fields_are_actually_populated():
+    """A field nobody fills is a promise the chain cannot cash.
+
+    The mirror of the previous test: that one catches fields passed but NOT
+    declared (silently dropped), this one catches fields declared but NEVER
+    passed (silently empty). Both look fine until something downstream reads
+    them.
+
+    `name` on AsanaTask/AsanaProject and `name`/`action` on WriteResult were
+    exactly this: the card renders from `title`, so a human saw the right
+    thing, while a chained tool reading `.name` got "".
+
+    Pagination fields (`page`, `has_more`) are excluded -- their defaults are
+    the correct answer for a single unpaged response.
+    """
+    import models
+
+    base_fields = {"id", "title", "kind", "subtitle", "description",
+                   "status", "url"}
+    pagination = {"page", "has_more", "total", "items"}
+
+    offenders: list[str] = []
+    for module_name in ("handlers_read.py", "handlers_write.py"):
+        for node in ast.walk(_tree(module_name)):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
+            model = getattr(models, name, None)
+            if model is None or not hasattr(model, "model_fields"):
+                continue
+            passed = {kw.arg for kw in node.keywords if kw.arg}
+            missing = set(model.model_fields) - passed - base_fields - pagination
+            if missing:
+                offenders.append(
+                    f"{module_name}:{node.lineno} {name} never fills {sorted(missing)}")
+
+    assert not offenders, (
+        "declared but never populated: " + "; ".join(offenders))
