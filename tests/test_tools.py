@@ -675,3 +675,29 @@ async def test_a_real_comma_separated_list_still_splits(connected_ctx, http):
 
     post = [c for c in http.calls if "Dependencies" in c["url"]][-1]
     assert post["json"]["data"]["dependencies"] == ["401", "402"]
+
+
+async def test_get_task_shows_dependencies_and_followers(connected_ctx, http):
+    """A write you cannot read back is a write you cannot verify.
+
+    Dependencies and followers became writable first; until they were readable
+    too, the connector could change a task's order or audience and then show
+    no trace of it -- including to itself, on the next call.
+    """
+    from models import GetTaskParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope(dict(
+        task_payload(gid="300", name="QA pass"),
+        dependencies=[{"gid": "410", "name": "Instrument analytics"}],
+        dependents=[{"gid": "420", "name": "Go live"}],
+        followers=[{"gid": "9", "name": "Vlad Ivanco"}],
+    )))
+
+    out = await hr.get_task(connected_ctx, GetTaskParams(task="1201234567"))
+    assert _ok(out), _text(out)
+
+    data = out.data
+    assert data.blocked_by == "Instrument analytics", data
+    assert data.blocking == "Go live", data
+    assert data.followers == "Vlad Ivanco", data

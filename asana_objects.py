@@ -24,6 +24,10 @@ TASK_FIELDS = ",".join([
     "due_at", "start_on", "notes", "assignee.name", "assignee.gid",
     "projects.name", "projects.gid", "parent.name", "parent.gid",
     "permalink_url", "created_at", "modified_at", "num_subtasks", "tags.name",
+    # Writable since the dependency/follower tools landed, so they have to be
+    # readable too -- otherwise a write cannot be verified by a read.
+    "dependencies.name", "dependencies.gid", "dependents.name",
+    "followers.name",
 ])
 
 TASK_COMPACT_FIELDS = ",".join([

@@ -562,6 +562,21 @@
             "title": "Parent",
             "type": "string"
           },
+          "blocked_by": {
+            "default": "",
+            "title": "Blocked By",
+            "type": "string"
+          },
+          "blocking": {
+            "default": "",
+            "title": "Blocking",
+            "type": "string"
+          },
+          "followers": {
+            "default": "",
+            "title": "Followers",
+            "type": "string"
+          },
           "projects": {
             "default": "",
             "title": "Projects",
@@ -909,6 +924,21 @@
             "title": "Parent",
             "type": "string"
           },
+          "blocked_by": {
+            "default": "",
+            "title": "Blocked By",
+            "type": "string"
+          },
+          "blocking": {
+            "default": "",
+            "title": "Blocking",
+            "type": "string"
+          },
+          "followers": {
+            "default": "",
+            "title": "Followers",
+            "type": "string"
+          },
           "projects": {
             "default": "",
             "title": "Projects",
@@ -1084,6 +1114,21 @@
           "parent": {
             "default": "",
             "title": "Parent",
+            "type": "string"
+          },
+          "blocked_by": {
+            "default": "",
+            "title": "Blocked By",
+            "type": "string"
+          },
+          "blocking": {
+            "default": "",
+            "title": "Blocking",
+            "type": "string"
+          },
+          "followers": {
+            "default": "",
+            "title": "Followers",
             "type": "string"
           },
           "projects": {

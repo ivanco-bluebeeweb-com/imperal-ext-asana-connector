@@ -297,6 +297,12 @@ class AsanaTask(sdl.Entity):
     # date and without saying it was a subtask. No error, just missing facts.
     start: str = ""
     parent: str = ""
+    # Dependencies and followers became WRITABLE before they were readable,
+    # which meant the connector could change them and then not show what it
+    # had done -- the effect of a write was invisible to the tool that made it.
+    blocked_by: str = ""
+    blocking: str = ""
+    followers: str = ""
     projects: str = ""
     tags: str = ""
     notes: str = ""
