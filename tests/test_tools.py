@@ -731,3 +731,51 @@ async def test_a_dependency_asana_silently_ignored_is_reported_as_failure(
     text = _text(out).lower()
     assert "paid" in text, text
     assert "descriptions" in text, "tell the user what to do instead: " + text
+
+
+async def test_dependency_names_are_fetched_when_asana_omits_them(
+        connected_ctx, http):
+    """The compact-resource trap, found live.
+
+    Asana returns `dependencies` and `dependents` as COMPACT resources -- gid
+    only, no name -- even when `dependencies.name` is requested. The task had
+    a real dependency, the write's own read-back found it by gid, and get_task
+    still showed an empty field. Data present, display empty: the shape of bug
+    that makes a user think the write failed.
+    """
+    from models import GetTaskParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope(dict(
+        task_payload(gid="300", name="QA pass"),
+        dependencies=[{"gid": "410"}],        # compact: no name
+        dependents=[{"gid": "420"}],          # compact: no name
+    )))
+    http.push(envelope({"gid": "410", "name": "Instrument analytics"}))
+    http.push(envelope({"gid": "420", "name": "Go live"}))
+
+    out = await hr.get_task(connected_ctx, GetTaskParams(task="1201234567"))
+    assert _ok(out), _text(out)
+    assert out.data.blocked_by == "Instrument analytics", out.data
+    assert out.data.blocking == "Go live", out.data
+
+
+async def test_an_unreadable_linked_task_is_not_silently_dropped(
+        connected_ctx, http):
+    """A link to a task this account cannot read is still a link.
+
+    Dropping it would render an empty field and imply the task is unblocked --
+    the opposite of the truth, and the more dangerous direction to be wrong in.
+    """
+    from models import GetTaskParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope(dict(
+        task_payload(gid="300", name="QA pass"),
+        dependencies=[{"gid": "999"}],
+    )))
+    http.push(envelope({}, ), )                      # name lookup: no name
+    out = await hr.get_task(connected_ctx, GetTaskParams(task="1201234567"))
+    assert _ok(out), _text(out)
+    assert out.data.blocked_by, "an unreadable link must not vanish"
+    assert "cannot read" in out.data.blocked_by

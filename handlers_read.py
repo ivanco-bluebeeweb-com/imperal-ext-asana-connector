@@ -464,6 +464,29 @@ async def get_task(ctx, params: GetTaskParams) -> ActionResult:
     task = out["data"]
     entity = _task_entity(task)
 
+    # Asana returns `dependencies` and `dependents` as COMPACT resources --
+    # gid only, no name, even though `dependencies.name` is in the field set.
+    # So the links were there and the fields rendered empty. Verified live: the
+    # write's own read-back found the dependency by gid while get_task showed
+    # nothing. The names are fetched here, only when links exist, and capped so
+    # one read cannot fan out into dozens of requests.
+    for field, attr in (("dependencies", "blocked_by"),
+                        ("dependents", "blocking")):
+        gids = ao.gid_list(task, field)[:10]
+        if not gids or getattr(entity, attr):
+            continue
+        names = []
+        for gid in gids:
+            linked = await ac.request(ctx, "GET", f"tasks/{gid}", token,
+                                      params={"opt_fields": "name"})
+            if linked.get("ok"):
+                names.append(ao.name_of(linked.get("data") or {}))
+        # A gid with no readable name is still a real link -- say so rather
+        # than dropping it and implying the task is unblocked.
+        setattr(entity, attr,
+                ", ".join(n or "(a task this account cannot read)"
+                          for n in names))
+
     if params.include_subtasks and int(task.get("num_subtasks") or 0) > 0:
         subs = await ac.paginate(ctx, f"tasks/{target['gid']}/subtasks", token,
                                  params={"opt_fields": ao.TASK_COMPACT_FIELDS},

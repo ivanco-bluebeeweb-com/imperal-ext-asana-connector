@@ -107,6 +107,24 @@ def name_list(item, key: str) -> list[str]:
             if isinstance(v, dict) and v.get("name")]
 
 
+def gid_list(item, key: str) -> list[str]:
+    """Gids from a list-valued field.
+
+    The companion to `name_list`, and it exists because of a real gap: Asana
+    returns `dependencies` and `dependents` as COMPACT resources -- gid only,
+    no name, even when `dependencies.name` is requested in opt_fields. So
+    `name_list` correctly found nothing and the field rendered empty while the
+    links plainly existed. The names have to be fetched separately, and this
+    is what says which gids to fetch.
+    """
+    if not isinstance(item, dict):
+        return []
+    values = item.get(key)
+    if not isinstance(values, list):
+        return []
+    return [gid_of(v) for v in values if isinstance(v, dict) and gid_of(v)]
+
+
 def looks_like_gid(value: str) -> bool:
     """True when the string is plausibly an Asana gid.
 
