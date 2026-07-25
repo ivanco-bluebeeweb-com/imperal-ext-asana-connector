@@ -115,7 +115,8 @@ async def connect_account(ctx, params: ConnectAccountParams) -> ActionResult:
 
 @chat.function(
     "create_task",
-    "Create a task in an Asana project, optionally assigned and with a due date.",
+    "Create a task in an Asana project, optionally assigned, with start and "
+    "due dates.",
     action_type="write", chain_callable=True,
     data_model=WriteResult,
     event="asana-connector.create_task",
@@ -167,6 +168,21 @@ async def create_task(ctx, params: CreateTaskParams) -> ActionResult:
                 ac.ASANA_VALIDATION_FAILED)
         data[field] = value
 
+    if params.start:
+        # Asana refuses `start_on` without a due date -- a task cannot begin
+        # without ending. Its own error for this is opaque, so the requirement
+        # is stated here instead of forwarded.
+        if not params.due:
+            return _error(
+                "A start date needs a due date too -- Asana rejects a task "
+                "that starts but never ends. Give both.",
+                ac.ASANA_VALIDATION_FAILED)
+        if "T" in params.start or ":" in params.start:
+            return _error(
+                "A start date is a day, not a moment. Use YYYY-MM-DD.",
+                ac.ASANA_VALIDATION_FAILED)
+        data["start_on"] = params.start.strip()
+
     if params.parent:
         parent = await shared.resolve_task(ctx, token, workspace_gid,
                                           params.parent)
@@ -193,7 +209,8 @@ async def create_task(ctx, params: CreateTaskParams) -> ActionResult:
 
 @chat.function(
     "update_task",
-    "Update a task's name, notes, assignee or due date.",
+    "Update a task's name, notes, assignee, or its start and due dates. Can "
+    "also unassign it or clear either date.",
     action_type="write", chain_callable=True,
     data_model=WriteResult,
     event="asana-connector.update_task",
@@ -224,7 +241,16 @@ async def update_task(ctx, params: UpdateTaskParams) -> ActionResult:
             return _from_envelope(who)
         data["assignee"] = who["gid"]
         changed.append("assignee")
-    if params.due:
+    elif params.clear_assignee:
+        # Declared on the params model and advertised in the tool description,
+        # but never read -- so "unassign this" silently did nothing.
+        data["assignee"] = None
+        changed.append("assignee (cleared)")
+    if params.clear_due:
+        data["due_on"] = None
+        data["due_at"] = None
+        changed.append("due date (cleared)")
+    elif params.due:
         # An explicit clearing word removes the date; Asana takes null for that.
         if params.due.strip().lower() in ("none", "clear", "remove"):
             data["due_on"] = None
@@ -238,9 +264,44 @@ async def update_task(ctx, params: UpdateTaskParams) -> ActionResult:
             data[field] = value
             changed.append("due date")
 
+    if params.clear_start:
+        data["start_on"] = None
+        changed.append("start date (cleared)")
+    elif params.start:
+        if "T" in params.start or ":" in params.start:
+            return _error(
+                "A start date is a day, not a moment. Use YYYY-MM-DD.",
+                ac.ASANA_VALIDATION_FAILED)
+        # Asana rejects a start date on a task that has no due date. The due
+        # date may already be set on the task, so requiring it in this call
+        # would refuse a legitimate update. The resolve envelope cannot answer
+        # this -- typeahead returns compact objects with no dates at all -- so
+        # ask for the one field, and only in this branch.
+        setting_due = "due_on" in data or "due_at" in data
+        if params.clear_due:
+            return _error(
+                "A start date needs a due date too -- clearing the due date "
+                "and setting a start date at the same time cannot both apply.",
+                ac.ASANA_VALIDATION_FAILED)
+        if not setting_due:
+            current = await ac.request(
+                ctx, "GET", f"tasks/{target['gid']}", token,
+                params={"opt_fields": "due_on,due_at"})
+            existing = current.get("data") or {} if current.get("ok") else {}
+            # If the lookup itself failed, do not invent a verdict -- let the
+            # PUT below surface the real reason.
+            if current.get("ok") and not (existing.get("due_on")
+                                          or existing.get("due_at")):
+                return _error(
+                    "A start date needs a due date too -- Asana rejects a "
+                    "task that starts but never ends. Set a due date as well.",
+                    ac.ASANA_VALIDATION_FAILED)
+        data["start_on"] = params.start.strip()
+
     if not data:
         return _error(
-            "Nothing to update -- give a name, notes, assignee or due date.",
+            "Nothing to update -- give a name, notes, assignee, due date or "
+            "start date.",
             ac.ASANA_VALIDATION_FAILED)
 
     out = await ac.request(ctx, "PUT", f"tasks/{target['gid']}", token, data=data,

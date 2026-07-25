@@ -1946,7 +1946,7 @@
     },
     {
       "name": "create_task",
-      "description": "Create a task in an Asana project, optionally assigned and with a due date.",
+      "description": "Create a task in an Asana project, optionally assigned, with start and due dates.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -1994,6 +1994,12 @@
             "default": "",
             "description": "Due date 'YYYY-MM-DD', or a timestamp for a due time",
             "title": "Due",
+            "type": "string"
+          },
+          "start": {
+            "default": "",
+            "description": "Start date 'YYYY-MM-DD'. Asana requires a due date alongside it -- a task cannot start without ending.",
+            "title": "Start",
             "type": "string"
           },
           "parent": {
@@ -2110,7 +2116,7 @@
     },
     {
       "name": "update_task",
-      "description": "Update a task's name, notes, assignee or due date.",
+      "description": "Update a task's name, notes, assignee, or its start and due dates. Can also unassign it or clear either date.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -2154,10 +2160,22 @@
             "title": "Due",
             "type": "string"
           },
+          "start": {
+            "default": "",
+            "description": "New start date 'YYYY-MM-DD'. The task must also have a due date, existing or set in the same call.",
+            "title": "Start",
+            "type": "string"
+          },
           "clear_due": {
             "default": false,
             "description": "Remove the due date entirely",
             "title": "Clear Due",
+            "type": "boolean"
+          },
+          "clear_start": {
+            "default": false,
+            "description": "Remove the start date",
+            "title": "Clear Start",
             "type": "boolean"
           },
           "clear_assignee": {

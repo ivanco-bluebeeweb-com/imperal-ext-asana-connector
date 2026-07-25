@@ -149,6 +149,9 @@ class CreateTaskParams(WorkspaceScoped):
     assignee: str = Field("", description="Who to assign it to (name, or 'me')")
     due: str = Field(
         "", description="Due date 'YYYY-MM-DD', or a timestamp for a due time")
+    start: str = Field(
+        "", description="Start date 'YYYY-MM-DD'. Asana requires a due date "
+                        "alongside it -- a task cannot start without ending.")
     parent: str = Field(
         "", description="Make this a subtask of the given task (name or gid)")
 
@@ -159,7 +162,11 @@ class UpdateTaskParams(WorkspaceScoped):
     notes: str = Field("", description="Replace the description")
     assignee: str = Field("", description="Reassign to this person, or 'me'")
     due: str = Field("", description="New due date 'YYYY-MM-DD' or timestamp")
+    start: str = Field(
+        "", description="New start date 'YYYY-MM-DD'. The task must also have "
+                        "a due date, existing or set in the same call.")
     clear_due: bool = Field(False, description="Remove the due date entirely")
+    clear_start: bool = Field(False, description="Remove the start date")
     clear_assignee: bool = Field(False, description="Unassign the task")
 
 

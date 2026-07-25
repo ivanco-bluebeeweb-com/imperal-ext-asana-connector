@@ -401,3 +401,118 @@ async def test_create_project_still_sends_public_in_a_personal_workspace(connect
 
     post = [c for c in http.calls if c["method"] == "POST"][-1]
     assert post["json"]["data"]["public"] is True
+
+
+# --- start dates and the clear_* flags --------------------------------------
+
+async def test_create_task_sets_a_start_date(connected_ctx, http):
+    """Timeline work is impossible without this.
+
+    `start_on` was READ back on every task but there was no way to SET it, so
+    a plan built through this connector could never show a duration.
+    """
+    from models import CreateTaskParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope([project_payload(gid="500", name="Launch")]))
+    http.push(envelope(task_payload(name="Fix title")))
+
+    out = await hw.create_task(connected_ctx, CreateTaskParams(
+        name="Fix title", project="Launch",
+        start="2026-08-01", due="2026-08-03"))
+    assert _ok(out), _text(out)
+
+    body = [c for c in http.calls if c["method"] == "POST"][-1]["json"]["data"]
+    assert body["start_on"] == "2026-08-01"
+    assert body["due_on"] == "2026-08-03"
+
+
+async def test_create_task_refuses_a_start_without_a_due_date(connected_ctx, http):
+    """Asana rejects a task that starts but never ends.
+
+    Its own message for this is opaque, so the requirement is stated up front
+    rather than forwarded -- and no HTTP call should be spent on it.
+    """
+    from models import CreateTaskParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope([project_payload(gid="500", name="Launch")]))
+
+    out = await hw.create_task(connected_ctx, CreateTaskParams(
+        name="Fix title", project="Launch", start="2026-08-01"))
+    assert not _ok(out)
+    assert "due date" in _text(out).lower()
+    assert not [c for c in http.calls if c["method"] == "POST"]
+
+
+async def test_create_task_rejects_a_timestamp_as_a_start_date(connected_ctx, http):
+    """`start_on` is a day. Asana has no start-time field on a task."""
+    from models import CreateTaskParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope([project_payload(gid="500", name="Launch")]))
+
+    out = await hw.create_task(connected_ctx, CreateTaskParams(
+        name="Fix title", project="Launch",
+        start="2026-08-01T09:00:00Z", due="2026-08-03"))
+    assert not _ok(out)
+    assert "day, not a moment" in _text(out).lower()
+
+
+async def test_update_task_accepts_a_start_when_the_task_already_has_a_due_date(
+        connected_ctx, http):
+    """The due date may already exist -- do not demand it be re-sent.
+
+    The resolve envelope cannot answer this: typeahead returns compact objects
+    with no dates, so a naive check would have blocked a legitimate update.
+    """
+    from models import UpdateTaskParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope({"gid": "1201", "due_on": "2026-08-03"}))   # due lookup
+    http.push(envelope(task_payload(gid="1201")))
+
+    # A pasted gid skips typeahead, so this test exercises the date logic
+    # rather than name resolution.
+    out = await hw.update_task(connected_ctx, UpdateTaskParams(
+        task="1201234567", start="2026-08-01"))
+    assert _ok(out), _text(out)
+
+    body = [c for c in http.calls if c["method"] == "PUT"][-1]["json"]["data"]
+    assert body["start_on"] == "2026-08-01"
+
+
+async def test_update_task_refuses_a_start_when_the_task_has_no_due_date(
+        connected_ctx, http):
+    """Same rule, checked against the task's real state."""
+    from models import UpdateTaskParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope({"gid": "1201"}))           # no due date on the task
+
+    out = await hw.update_task(connected_ctx, UpdateTaskParams(
+        task="1201234567", start="2026-08-01"))
+    assert not _ok(out)
+    assert "due date" in _text(out).lower()
+    assert not [c for c in http.calls if c["method"] == "PUT"]
+
+
+async def test_clear_due_and_clear_assignee_actually_do_something(connected_ctx, http):
+    """Both flags were declared, advertised in the tool description -- and never read.
+
+    Same class of bug as the dropped entity fields: the promise was visible in
+    the schema, so "unassign this task" looked supported and silently did
+    nothing.
+    """
+    from models import UpdateTaskParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope(task_payload(gid="1201")))
+
+    out = await hw.update_task(connected_ctx, UpdateTaskParams(
+        task="1201234567", clear_due=True, clear_assignee=True))
+    assert _ok(out), _text(out)
+
+    body = [c for c in http.calls if c["method"] == "PUT"][-1]["json"]["data"]
+    assert body["due_on"] is None
+    assert body["assignee"] is None
