@@ -629,3 +629,49 @@ async def test_removing_an_unknown_tag_creates_nothing(connected_ctx, http):
     assert "nothing to remove" in _text(out).lower()
     assert not any(c["method"] == "POST" and c["url"].endswith("/tags")
                    for c in http.calls)
+
+
+async def test_a_task_name_containing_a_comma_is_not_split(connected_ctx, http):
+    """Found live, and it failed SILENTLY.
+
+    Asking a task to wait for 'Instrument analytics and call tracking before
+    launch, not after' -- one task, comma in the title -- split into two
+    halves, each resolved to something, and linked TWO dependencies from one
+    name. No error: just a confidently wrong result nobody would re-check.
+    """
+    from models import TaskDependencyParams
+
+    whole = "Instrument analytics before launch, not after"
+
+    http.push(envelope(me_payload()))
+    http.push(envelope([{"gid": "300", "name": "QA pass"}]))      # target
+    http.push(envelope([{"gid": "410", "name": whole}]))          # whole name
+    http.push(envelope([{"gid": "410", "name": whole}]))          # resolve it
+    http.push(envelope({}))                                       # addDependencies
+
+    out = await hw.set_task_dependency(connected_ctx, TaskDependencyParams(
+        task="QA pass", depends_on=whole))
+    assert _ok(out), _text(out)
+
+    post = [c for c in http.calls if "Dependencies" in c["url"]][-1]
+    assert post["json"]["data"]["dependencies"] == ["410"], (
+        f"one task named, one dependency expected: {post['json']['data']}")
+
+
+async def test_a_real_comma_separated_list_still_splits(connected_ctx, http):
+    """The comma-aware split must not break the list case it exists for."""
+    from models import TaskDependencyParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope([{"gid": "300", "name": "QA pass"}]))   # target
+    http.push(envelope([]))                                   # not one name
+    http.push(envelope([{"gid": "401", "name": "Fix title"}]))
+    http.push(envelope([{"gid": "402", "name": "Add DKIM"}]))
+    http.push(envelope({}))
+
+    out = await hw.set_task_dependency(connected_ctx, TaskDependencyParams(
+        task="QA pass", depends_on="Fix title, Add DKIM"))
+    assert _ok(out), _text(out)
+
+    post = [c for c in http.calls if "Dependencies" in c["url"]][-1]
+    assert post["json"]["data"]["dependencies"] == ["401", "402"]

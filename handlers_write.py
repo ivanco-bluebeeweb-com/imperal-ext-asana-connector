@@ -654,6 +654,28 @@ def _split_names(raw: str) -> list[str]:
     return [part.strip() for part in (raw or "").split(",") if part.strip()]
 
 
+async def _split_refs(raw: str, probe) -> list[str]:
+    """Split a comma-separated reference list -- but only when it IS a list.
+
+    Found live, and it silently did the wrong thing: asking one task to wait
+    for 'Instrument analytics and call tracking before launch, not after' --
+    a SINGLE task whose title contains a comma -- split into two halves, both
+    of which resolved to something, and linked two dependencies from one name.
+    A confident wrong answer, no error anywhere.
+
+    So a comma makes a separator only if the whole string is not itself a
+    name. `probe` is a NON-CREATING lookup: it must never invent the absurd
+    object that a joined string would name.
+    """
+    whole = (raw or "").strip()
+    if "," not in whole:
+        return [whole] if whole else []
+    found = await probe(whole)
+    if found.get("ok"):
+        return [whole]
+    return _split_names(whole)
+
+
 @chat.function(
     "set_task_dependency",
     "Make one task wait for another (or remove that dependency). This is how "
@@ -681,7 +703,9 @@ async def set_task_dependency(ctx, params: TaskDependencyParams) -> ActionResult
     if not target.get("ok"):
         return _from_envelope(target)
 
-    names = _split_names(params.depends_on)
+    names = await _split_refs(
+        params.depends_on,
+        lambda ref: shared.resolve_task(ctx, token, workspace_gid, ref))
     if not names:
         return _error("Name at least one task that must finish first.",
                       ac.ASANA_VALIDATION_FAILED)
@@ -741,7 +765,9 @@ async def set_task_followers(ctx, params: TaskFollowersParams) -> ActionResult:
     if not target.get("ok"):
         return _from_envelope(target)
 
-    names = _split_names(params.people)
+    names = await _split_refs(
+        params.people,
+        lambda ref: shared.resolve_user(ctx, token, workspace_gid, ref))
     if not names:
         return _error("Name at least one person.", ac.ASANA_VALIDATION_FAILED)
 
@@ -799,7 +825,12 @@ async def set_task_tags(ctx, params: TaskTagsParams) -> ActionResult:
     if not target.get("ok"):
         return _from_envelope(target)
 
-    names = _split_names(params.tags)
+    # The probe here must be the non-creating lookup: a comma-joined string
+    # that is not a tag must NOT be created as one.
+    names = await _split_refs(
+        params.tags,
+        lambda ref: acct.resolve_target(ctx, token, workspace_gid, ref,
+                                        resource_type="tag"))
     if not names:
         return _error("Name at least one tag.", ac.ASANA_VALIDATION_FAILED)
 
