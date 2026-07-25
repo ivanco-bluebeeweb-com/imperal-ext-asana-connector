@@ -197,3 +197,43 @@ async def test_list_endpoint_returning_an_object_is_caught(ctx, http):
     http.push(envelope({"gid": "1"}))
     out = await ac.paginate(ctx, "tasks", "tok")
     assert out["code"] == ac.ASANA_RESPONSE_UNEXPECTED
+
+
+# --- every code must say something useful -----------------------------------
+
+def test_every_structured_code_has_its_own_message():
+    """A code without prose degrades to "The Asana request failed."
+
+    Nine of nineteen codes had no entry, and the gap was invisible because the
+    call sites that matter pass an explicit message. ASANA_TOKEN_MISSING did
+    not: a deployed `create_task` told the user only that "The Asana request
+    failed", when the actual problem was that no token had been pasted yet --
+    a precise, fixable condition rendered as un-actionable prose.
+    """
+    codes = {
+        value for name, value in vars(ac).items()
+        # A code constant is one whose NAME equals its VALUE; this skips
+        # ASANA_API (a URL) and the numeric limits.
+        if name.startswith("ASANA_") and isinstance(value, str) and value == name
+    }
+    assert codes, "no structured codes found -- the discovery rule is wrong"
+
+    generic = "The Asana request failed."
+    # ASANA_HTTP_ERROR is the deliberate catch-all: it is the one code that has
+    # nothing more specific to say, because it means "an HTTP failure we did
+    # not classify".
+    vague = sorted(c for c in codes - {ac.ASANA_HTTP_ERROR}
+                   if ac.message_for(c) == generic)
+    assert not vague, f"these codes fall back to generic prose: {vague}"
+
+
+def test_messages_do_not_blame_the_user_for_platform_problems():
+    """Advice must match the actual cause.
+
+    A secret store that cannot be read is not a token problem, so it must not
+    tell anyone to paste a token -- that is advice no amount of pasting fixes.
+    """
+    for code in (ac.ASANA_SECRET_UNAVAILABLE, ac.ASANA_SECRET_WRITE_FAILED):
+        text = ac.message_for(code).lower()
+        assert "paste" not in text
+        assert "create a" not in text

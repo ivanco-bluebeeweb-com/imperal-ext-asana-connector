@@ -108,6 +108,50 @@ _MESSAGES = {
         "The token could not be saved to the secure store, so nothing was "
         "changed. Try again shortly."
     ),
+    # --- codes below were missing their prose ------------------------------
+    # Most of these are normally raised WITH an explicit, situation-specific
+    # message (the names of the matching tasks, the reachable workspaces), so
+    # the gap stayed invisible in tests. But any bare `fail(CODE)` fell through
+    # to "The Asana request failed." -- which is exactly what a real
+    # ASANA_TOKEN_MISSING looked like in production: a precise, actionable
+    # condition rendered as un-actionable prose.
+    ASANA_TOKEN_MISSING: (
+        "No Asana access token is configured yet. Create a personal access "
+        "token at app.asana.com/0/my-apps and paste it into the Asana "
+        "Connector's Connect screen."
+    ),
+    ASANA_ACCOUNT_UNKNOWN: (
+        "That Asana account is not connected. Check the account list, or "
+        "connect the token again."
+    ),
+    ASANA_WORKSPACE_UNKNOWN: (
+        "No Asana workspace of that name is reachable with the connected "
+        "token(s). Check the spelling, or connect an account that belongs to "
+        "that workspace."
+    ),
+    ASANA_WORKSPACE_AMBIGUOUS: (
+        "Several Asana workspaces are reachable, so the workspace has to be "
+        "named -- picking one at random and writing to it is not recoverable."
+    ),
+    ASANA_TARGET_NOT_FOUND: (
+        "Nothing of that name was found in this workspace. Asana's quick "
+        "search matches the start of words and only sees items this account "
+        "has access to."
+    ),
+    ASANA_TARGET_AMBIGUOUS: (
+        "That name matches more than one item, so it is not clear which one "
+        "was meant. Use a more specific name, or paste the Asana gid from the "
+        "item's URL."
+    ),
+    ASANA_RESPONSE_NOT_JSON: (
+        "Asana returned something that is not JSON. That usually means a "
+        "gateway or captcha page rather than the API itself."
+    ),
+    ASANA_RESPONSE_UNEXPECTED: (
+        "Asana's reply did not have the shape this connector expects, so it "
+        "was not trusted rather than guessed at."
+    ),
+    ASANA_HTTP_ERROR: "The Asana request failed.",
 }
 
 _RETRYABLE = {"RATE_LIMITED", "BACKEND_5XX", "BACKEND_TIMEOUT",
