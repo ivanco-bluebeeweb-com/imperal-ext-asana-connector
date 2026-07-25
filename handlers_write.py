@@ -486,7 +486,11 @@ async def create_project(ctx, params: CreateProjectParams) -> ActionResult:
     data: dict = {"name": params.name.strip(), "workspace": workspace_gid}
     if params.notes:
         data["notes"] = params.notes
-    if params.public:
+    # `public` is writable ONLY in a personal workspace. In an ORGANIZATION
+    # visibility follows team membership and Asana answers
+    # "public: Cannot write this property" -- so sending it there rejected
+    # every single project creation, since the param defaults to True.
+    if params.public and not workspace.get("is_organization"):
         data["public"] = True
 
     if params.team:

@@ -361,3 +361,43 @@ async def test_task_entity_keeps_its_start_date_and_parent(connected_ctx, http):
     assert _ok(out)
     assert out.data.start == "2026-07-20"
     assert out.data.parent == "Launch ksrenovationgroup.com"
+
+
+async def test_create_project_omits_public_in_an_organization(connected_ctx, http):
+    """`public` is not writable on an organization project.
+
+    Visibility there follows TEAM MEMBERSHIP, and Asana answers
+    "public: Cannot write this property". Since CreateProjectParams.public
+    defaults to True, sending it unconditionally rejected every project
+    creation in an org -- which is the only place a project needs a team, i.e.
+    exactly the real-world case.
+    """
+    from models import CreateProjectParams
+
+    http.push(envelope(me_payload(workspaces=[
+        {"gid": "100", "name": "Acme", "is_organization": True}])))
+    http.push(envelope([{"gid": "700", "name": "Delivery"}]))   # team lookup
+    http.push(envelope(project_payload(gid="900", name="Launch")))
+
+    out = await hw.create_project(connected_ctx, CreateProjectParams(
+        name="Launch", team="Delivery"))
+    assert _ok(out), _text(out)
+
+    post = [c for c in http.calls if c["method"] == "POST"][-1]
+    body = post["json"]["data"]
+    assert "public" not in body, f"public must not be sent to an org: {body}"
+    assert body["team"] == "700"
+
+
+async def test_create_project_still_sends_public_in_a_personal_workspace(connected_ctx, http):
+    """The flag is legitimate off an organization -- do not drop it everywhere."""
+    from models import CreateProjectParams
+
+    http.push(envelope(me_payload(workspaces=[{"gid": "100", "name": "Acme"}])))
+    http.push(envelope(project_payload(gid="900", name="Launch")))
+
+    out = await hw.create_project(connected_ctx, CreateProjectParams(name="Launch"))
+    assert _ok(out), _text(out)
+
+    post = [c for c in http.calls if c["method"] == "POST"][-1]
+    assert post["json"]["data"]["public"] is True
