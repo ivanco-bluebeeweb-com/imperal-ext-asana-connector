@@ -31,6 +31,8 @@ from models import (
     AdvancedSearchParams,
     AsanaAccount,
     AsanaAccountList,
+    AsanaAttachment,
+    AsanaAttachmentList,
     AsanaComment,
     AsanaCommentList,
     AsanaObject,
@@ -50,6 +52,7 @@ from models import (
     CheckAccessParams,
     GetTaskParams,
     ListAccountsParams,
+    ListAttachmentsParams,
     ListCommentsParams,
     ListProjectsParams,
     ListSectionsParams,
@@ -765,3 +768,67 @@ async def check_access(ctx, params: CheckAccessParams) -> ActionResult:
     if broken:
         summary += f". {len(broken)} configured token(s) are not working"
     return ActionResult.success(report, summary)
+
+
+@chat.function(
+    "list_attachments",
+    "List the files attached to a task -- drawings, quotes, photos.",
+    action_type="read", chain_callable=True,
+    data_model=AsanaAttachment,
+)
+async def list_attachments(ctx, params: ListAttachmentsParams) -> ActionResult:
+    """List a task's attachments.
+
+    Attachments carry the actual deliverable: the drawing, the quote, the photo
+    of the wall. Until now a task with three files read exactly like a task
+    with none -- structurally complete, and quietly missing the evidence.
+
+    `download_url` is deliberately not surfaced. Asana issues it as a signed
+    link that expires within minutes, so showing one hands the user a URL that
+    is already dead by the time they click it. `permanent_url` opens the file
+    in Asana and keeps working.
+    """
+    token, workspace, err = await _resolve(ctx, params.workspace)
+    if err:
+        return err
+
+    target = await shared.resolve_task(ctx, token, workspace.get("gid", ""),
+                                       params.task)
+    if not target.get("ok"):
+        return _from_envelope(target)
+
+    out = await ac.paginate(ctx, f"tasks/{target['gid']}/attachments", token,
+                            params={"opt_fields": ao.ATTACHMENT_FIELDS},
+                            limit=params.limit)
+    if not out.get("ok"):
+        return _from_envelope(out)
+
+    task_name = target.get("name") or params.task
+    if not out["results"]:
+        return ActionResult.success(
+            AsanaAttachmentList(items=[], total=0),
+            f"No files attached to '{task_name}'.")
+
+    items = []
+    for item in out["results"]:
+        gid = ao.gid_of(item)
+        name = ao.name_of(item)
+        items.append(AsanaAttachment(
+            id=gid,
+            title=name or "(unnamed file)",
+            gid=gid,
+            name=name,
+            created=str(item.get("created_at") or ""),
+            # `host` says where the file actually lives -- asana, dropbox,
+            # gdrive. A "file" that is really a Drive link behaves nothing
+            # like an uploaded one, and the difference matters before someone
+            # promises a client the file is archived with the task.
+            host=str(item.get("host") or ""),
+            size=ao.human_size(item.get("size")),
+            url=str(item.get("permanent_url") or ""),
+            summary=ao.render_attachment(item),
+        ))
+
+    return ActionResult.success(
+        AsanaAttachmentList(items=items, total=len(items)),
+        f"{len(items)} file(s) attached to '{task_name}'")

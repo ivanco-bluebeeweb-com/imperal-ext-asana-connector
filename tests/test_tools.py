@@ -832,3 +832,68 @@ async def test_an_unset_custom_field_is_not_rendered_as_noise(
     out = await hr.get_task(connected_ctx, GetTaskParams(task="1201234567"))
     assert _ok(out), _text(out)
     assert out.data.custom_fields == "Priority: High", out.data.custom_fields
+
+
+# --- attachments -------------------------------------------------------------
+
+async def test_attachments_are_listed_with_readable_sizes(connected_ctx, http):
+    """A task with three files used to read exactly like a task with none.
+
+    Attachments carry the actual deliverable -- the drawing, the quote, the
+    photo of the wall. Size is rendered for humans: '15728640' says nothing
+    about whether a file can be sent to a client on a phone; '15 MB' does.
+    """
+    from models import ListAttachmentsParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope([
+        {"gid": "10", "name": "kitchen-plan.pdf", "size": 2411724,
+         "host": "asana", "created_at": "2026-07-20T10:00:00.000Z",
+         "permanent_url": "https://app.asana.com/att/10"},
+    ]))
+
+    out = await hr.list_attachments(connected_ctx, ListAttachmentsParams(
+        task="1201234567"))
+    assert _ok(out), _text(out)
+
+    first = out.data.items[0]
+    assert first.name == "kitchen-plan.pdf"
+    assert first.size == "2.3 MB", first.size
+    assert first.url == "https://app.asana.com/att/10"
+
+
+async def test_an_external_file_says_where_it_actually_lives(connected_ctx, http):
+    """A Drive link and an uploaded file look identical in a list.
+
+    They behave nothing alike: one is archived with the task, the other
+    disappears the day someone tidies their Drive. Worth knowing BEFORE
+    telling a client the file is safe with the project.
+    """
+    from models import ListAttachmentsParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope([
+        {"gid": "11", "name": "site-photos", "host": "gdrive",
+         "created_at": "2026-07-21T10:00:00.000Z",
+         "permanent_url": "https://app.asana.com/att/11"},
+    ]))
+
+    out = await hr.list_attachments(connected_ctx, ListAttachmentsParams(
+        task="1201234567"))
+    assert _ok(out), _text(out)
+    assert "gdrive" in out.data.items[0].summary.lower(), out.data.items[0].summary
+
+
+async def test_no_attachments_is_a_clear_answer_not_an_empty_list(
+        connected_ctx, http):
+    """'No files attached' is information; a blank list looks like a failure."""
+    from models import ListAttachmentsParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope([]))
+
+    out = await hr.list_attachments(connected_ctx, ListAttachmentsParams(
+        task="1201234567"))
+    assert _ok(out)
+    assert out.data.total == 0
+    assert "no files" in _text(out).lower(), _text(out)

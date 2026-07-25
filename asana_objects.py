@@ -56,6 +56,15 @@ STORY_FIELDS = ",".join([
     "gid", "text", "created_at", "created_by.name", "type", "resource_subtype",
 ])
 
+# `download_url` is deliberately NOT requested. Asana issues it as a short-
+# lived signed link that expires within minutes, so storing or showing one
+# hands the user a URL that is already dead by the time they click it.
+# `permanent_url` opens the attachment in Asana and keeps working.
+ATTACHMENT_FIELDS = ",".join([
+    "gid", "name", "resource_type", "created_at", "permanent_url", "host",
+    "size",
+])
+
 USER_FIELDS = "gid,name,email,resource_type"
 
 WORKSPACE_FIELDS = "gid,name,resource_type,is_organization"
@@ -138,6 +147,45 @@ def custom_field_pairs(task) -> list[tuple[str, str]]:
         if label and shown:
             pairs.append((label, shown))
     return pairs
+
+
+def human_size(value) -> str:
+    """Byte count -> '2.4 MB'.
+
+    Asana reports size in bytes. '15728640' tells a person nothing about
+    whether a file is safe to send to a client on a phone; '15 MB' does.
+    """
+    try:
+        size = float(value)
+    except (TypeError, ValueError):
+        return ""
+    if size < 0:
+        return ""
+    for unit in ("B", "KB", "MB", "GB"):
+        if size < 1024 or unit == "GB":
+            shown = f"{size:.0f}" if unit == "B" or size >= 10 else f"{size:.1f}"
+            return f"{shown} {unit}"
+        size /= 1024
+    return ""
+
+
+def render_attachment(item) -> str:
+    """Human-readable one-line summary of an attachment."""
+    if not isinstance(item, dict):
+        return ""
+    parts = [name_of(item) or "(unnamed file)"]
+    size = human_size(item.get("size"))
+    if size:
+        parts.append(size)
+    # Where the file LIVES, not just that it is attached: a Drive link and an
+    # uploaded file look identical in a list and behave nothing alike.
+    host = str(item.get("host") or "").strip()
+    if host and host != "asana":
+        parts.append(f"stored in {host}")
+    created = str(item.get("created_at") or "")[:10]
+    if created:
+        parts.append(f"added {created}")
+    return " | ".join(parts)
 
 
 def gid_list(item, key: str) -> list[str]:

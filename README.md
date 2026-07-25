@@ -41,7 +41,7 @@ line — for people holding separate personal and client tokens.
 
 **Reading** — `list_accounts`, `list_workspaces`, `search`, `search_tasks`,
 `list_projects`, `list_tasks`, `get_task`, `list_sections`, `list_comments`,
-`list_users`, `list_teams`, `check_access`
+`list_attachments`, `list_users`, `list_teams`, `check_access`
 
 **Writing** — `connect_account`, `create_task`, `update_task`, `complete_task`,
 `move_task`, `add_comment`, `create_project`, `create_section`,
@@ -51,6 +51,19 @@ line — for people holding separate personal and client tokens.
 recoverable for 30 days)
 
 ## Asana constraints worth knowing
+
+**Dependencies and dependents come back COMPACT.** Asana returns them as
+gid-only resources even when `dependencies.name` is in `opt_fields`, so a
+name-based read finds nothing and the field renders empty while the links
+plainly exist. `get_task` fetches the names separately.
+
+**A free workspace accepts dependency writes and stores nothing.** Task
+dependencies are a paid feature and the API mirrors the product limit without
+an error: HTTP 200, no data written. `set_task_dependency` reads the write
+back and reports the no-op instead of claiming success.
+
+**Attachment `download_url` expires within minutes.** Only `permanent_url` is
+surfaced, because a signed link is already dead by the time a user clicks it.
 
 **`start_on` needs `due_on` in the SAME request.** Not merely present on the
 task -- setting a start date on a task that already had a due date still fails

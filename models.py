@@ -123,6 +123,12 @@ class ListCommentsParams(WorkspaceScoped):
         False, description="Also include system activity, not just human comments")
 
 
+class ListAttachmentsParams(WorkspaceScoped):
+    task: str = Field(..., description="Task name or gid whose files to list")
+    limit: int = Field(50, ge=1, le=100,
+                       description="Maximum attachments to return")
+
+
 class ListUsersParams(WorkspaceScoped):
     query: str = Field("", description="Filter users by name fragment")
     limit: int = Field(50, ge=1, le=100, description="Maximum users to return")
@@ -357,6 +363,29 @@ class AsanaComment(sdl.Entity):
 
 
 class AsanaCommentList(sdl.EntityList[AsanaComment]):
+    pass
+
+
+class AsanaAttachment(sdl.Entity):
+    """One file attached to a task.
+
+    Attachments carry the actual deliverable -- the drawing, the quote, the
+    photo of the wall. A task read without them looks like a task with no
+    evidence attached to it.
+    """
+    gid: str = ""
+    name: str = ""
+    created: str = ""
+    host: str = ""
+    size: str = ""
+    url: str = ""
+    # Declared because the handler fills it. The structural test caught this
+    # missing on the first run -- pydantic drops an undeclared field silently,
+    # which is the exact bug class that cost this codebase three earlier fixes.
+    summary: str = ""
+
+
+class AsanaAttachmentList(sdl.EntityList[AsanaAttachment]):
     pass
 
 

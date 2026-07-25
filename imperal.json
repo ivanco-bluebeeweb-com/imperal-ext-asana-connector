@@ -1867,6 +1867,150 @@
       "owner_chat_tool": "asana"
     },
     {
+      "name": "list_attachments",
+      "description": "List the files attached to a task -- drawings, quotes, photos.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "task": {
+            "description": "Task name or gid whose files to list",
+            "title": "Task",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "description": "Maximum attachments to return",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "task"
+        ],
+        "title": "ListAttachmentsParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "One file attached to a task.\n\nAttachments carry the actual deliverable -- the drawing, the quote, the\nphoto of the wall. A task read without them looks like a task with no\nevidence attached to it.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "created": {
+            "default": "",
+            "title": "Created",
+            "type": "string"
+          },
+          "host": {
+            "default": "",
+            "title": "Host",
+            "type": "string"
+          },
+          "size": {
+            "default": "",
+            "title": "Size",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaAttachment",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
       "name": "connect_account",
       "description": "Connect an Asana account by saving its personal access token, after checking the token actually works.",
       "action_type": "write",
