@@ -1,0 +1,3123 @@
+{
+  "manifest_schema_version": 3,
+  "sdk_version": "5.9.12",
+  "app_id": "asana-connector",
+  "version": "1.0.0",
+  "name": "Asana Connector",
+  "description": "Read and operate on Asana: browse workspaces, projects and tasks, read task details and comments, create and update tasks, complete them, move them between projects and sections, and comment -- across multiple Asana accounts.",
+  "icon": "icon.svg",
+  "actions_explicit": true,
+  "system": false,
+  "capabilities": [
+    "asana:read",
+    "asana:write"
+  ],
+  "tools": [
+    {
+      "name": "list_accounts",
+      "description": "List the connected Asana accounts and whether each token still works.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "refresh": {
+            "default": false,
+            "description": "Re-read account and workspace details from Asana instead of the cache",
+            "title": "Refresh",
+            "type": "boolean"
+          }
+        },
+        "title": "ListAccountsParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "One connected Asana account (one personal access token).",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "default": "",
+            "title": "Status",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "slot": {
+            "default": 0,
+            "title": "Slot",
+            "type": "integer"
+          },
+          "account_name": {
+            "default": "",
+            "title": "Account Name",
+            "type": "string"
+          },
+          "email": {
+            "default": "",
+            "title": "Email",
+            "type": "string"
+          },
+          "workspaces": {
+            "default": "",
+            "title": "Workspaces",
+            "type": "string"
+          },
+          "workspace_count": {
+            "default": 0,
+            "title": "Workspace Count",
+            "type": "integer"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaAccount",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "list_workspaces",
+      "description": "List every Asana workspace and organization the connected tokens reach.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "refresh": {
+            "default": false,
+            "description": "Re-read workspaces from Asana instead of the cache",
+            "title": "Refresh",
+            "type": "boolean"
+          }
+        },
+        "title": "ListWorkspacesParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "One workspace or organization reachable by a connected token.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "is_organization": {
+            "default": false,
+            "title": "Is Organization",
+            "type": "boolean"
+          },
+          "account_name": {
+            "default": "",
+            "title": "Account Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaWorkspace",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "search",
+      "description": "Search a workspace for tasks, projects, people, tags, teams or portfolios by name. Works on every Asana plan.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "query": {
+            "default": "",
+            "description": "Text to match against names. Asana matches on the start of words, not arbitrary substrings.",
+            "title": "Query",
+            "type": "string"
+          },
+          "kind": {
+            "default": "task",
+            "description": "What to search for: task, project, user, tag, portfolio or team.",
+            "title": "Kind",
+            "type": "string"
+          },
+          "limit": {
+            "default": 20,
+            "description": "Maximum results to return",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "SearchParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "A generic search hit -- task, project, user, tag, portfolio or team.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "object_type": {
+            "default": "",
+            "title": "Object Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaObject",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "search_tasks",
+      "description": "Advanced task search with filters (assignee, completion, due dates). Requires a paid Asana plan.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "description": "Premium-only filtered task search.\n\nSeparate from `search` on purpose: this endpoint answers 402 Payment\nRequired on non-premium plans, so folding it into the default search verb\nwould break the connector's most basic action for free-plan users.",
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "text": {
+            "default": "",
+            "description": "Free text to match in task names and notes",
+            "title": "Text",
+            "type": "string"
+          },
+          "assignee": {
+            "default": "",
+            "description": "Assignee name, or 'me'",
+            "title": "Assignee",
+            "type": "string"
+          },
+          "project": {
+            "default": "",
+            "description": "Restrict to one project (name or gid)",
+            "title": "Project",
+            "type": "string"
+          },
+          "completed": {
+            "default": "",
+            "description": "Filter by completion: 'true', 'false', or empty for both",
+            "title": "Completed",
+            "type": "string"
+          },
+          "due_before": {
+            "default": "",
+            "description": "Only tasks due before this date (YYYY-MM-DD)",
+            "title": "Due Before",
+            "type": "string"
+          },
+          "due_after": {
+            "default": "",
+            "description": "Only tasks due after this date (YYYY-MM-DD)",
+            "title": "Due After",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "description": "Maximum tasks to return",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "AdvancedSearchParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "One Asana task, flattened for display.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "completed": {
+            "default": false,
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "assignee": {
+            "default": "",
+            "title": "Assignee",
+            "type": "string"
+          },
+          "due": {
+            "default": "",
+            "title": "Due",
+            "type": "string"
+          },
+          "projects": {
+            "default": "",
+            "title": "Projects",
+            "type": "string"
+          },
+          "tags": {
+            "default": "",
+            "title": "Tags",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "title": "Notes",
+            "type": "string"
+          },
+          "subtask_count": {
+            "default": 0,
+            "title": "Subtask Count",
+            "type": "integer"
+          },
+          "modified": {
+            "default": "",
+            "title": "Modified",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaTask",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "list_projects",
+      "description": "List projects in a workspace, optionally filtered by team.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "team": {
+            "default": "",
+            "description": "Restrict to one team (name or gid)",
+            "title": "Team",
+            "type": "string"
+          },
+          "archived": {
+            "default": false,
+            "description": "Include archived projects (excluded by default)",
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 50,
+            "description": "Maximum projects to return",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "ListProjectsParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "One Asana project.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "default": "",
+            "title": "Status",
+            "type": "string"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "archived": {
+            "default": false,
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "owner": {
+            "default": "",
+            "title": "Owner",
+            "type": "string"
+          },
+          "team": {
+            "default": "",
+            "title": "Team",
+            "type": "string"
+          },
+          "due": {
+            "default": "",
+            "title": "Due",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "title": "Notes",
+            "type": "string"
+          },
+          "modified": {
+            "default": "",
+            "title": "Modified",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaProject",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "list_tasks",
+      "description": "List tasks in a project, or tasks assigned to someone in a workspace.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "description": "Asana REFUSES to list tasks without a narrowing filter.\n\n`GET /tasks` requires project, or tag, or assignee+workspace -- a bare call\nis a 400. So these fields are not merely conveniences: at least one of\nproject/assignee/section must be given, and the tool says so up front rather\nthan forwarding a request Asana will reject.",
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "project": {
+            "default": "",
+            "description": "Project name or gid to list tasks from",
+            "title": "Project",
+            "type": "string"
+          },
+          "section": {
+            "default": "",
+            "description": "Section name or gid within the project",
+            "title": "Section",
+            "type": "string"
+          },
+          "assignee": {
+            "default": "",
+            "description": "Assignee name, or 'me'",
+            "title": "Assignee",
+            "type": "string"
+          },
+          "completed": {
+            "default": false,
+            "description": "Include completed tasks (open tasks only by default)",
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 50,
+            "description": "Maximum tasks to return",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "ListTasksParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "One Asana task, flattened for display.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "completed": {
+            "default": false,
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "assignee": {
+            "default": "",
+            "title": "Assignee",
+            "type": "string"
+          },
+          "due": {
+            "default": "",
+            "title": "Due",
+            "type": "string"
+          },
+          "projects": {
+            "default": "",
+            "title": "Projects",
+            "type": "string"
+          },
+          "tags": {
+            "default": "",
+            "title": "Tags",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "title": "Notes",
+            "type": "string"
+          },
+          "subtask_count": {
+            "default": 0,
+            "title": "Subtask Count",
+            "type": "integer"
+          },
+          "modified": {
+            "default": "",
+            "title": "Modified",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaTask",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "get_task",
+      "description": "Read one task in full: notes, assignee, dates, projects and subtasks.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "task": {
+            "description": "Task name or gid",
+            "title": "Task",
+            "type": "string"
+          },
+          "include_subtasks": {
+            "default": true,
+            "description": "Also list the task's subtasks",
+            "title": "Include Subtasks",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "task"
+        ],
+        "title": "GetTaskParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "One Asana task, flattened for display.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "completed": {
+            "default": false,
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "assignee": {
+            "default": "",
+            "title": "Assignee",
+            "type": "string"
+          },
+          "due": {
+            "default": "",
+            "title": "Due",
+            "type": "string"
+          },
+          "projects": {
+            "default": "",
+            "title": "Projects",
+            "type": "string"
+          },
+          "tags": {
+            "default": "",
+            "title": "Tags",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "title": "Notes",
+            "type": "string"
+          },
+          "subtask_count": {
+            "default": 0,
+            "title": "Subtask Count",
+            "type": "integer"
+          },
+          "modified": {
+            "default": "",
+            "title": "Modified",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaTask",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "list_sections",
+      "description": "List the sections (columns) of a project.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "project": {
+            "description": "Project name or gid",
+            "title": "Project",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project"
+        ],
+        "title": "ListSectionsParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "One section inside a project.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "project": {
+            "default": "",
+            "title": "Project",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaSection",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "list_comments",
+      "description": "Read the comments and activity on a task.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "task": {
+            "description": "Task name or gid whose comments to read",
+            "title": "Task",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "description": "Maximum comments to return",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "include_activity": {
+            "default": false,
+            "description": "Also include system activity, not just human comments",
+            "title": "Include Activity",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "task"
+        ],
+        "title": "ListCommentsParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "One comment (or activity entry) on a task.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "author": {
+            "default": "",
+            "title": "Author",
+            "type": "string"
+          },
+          "text": {
+            "default": "",
+            "title": "Text",
+            "type": "string"
+          },
+          "created": {
+            "default": "",
+            "title": "Created",
+            "type": "string"
+          },
+          "is_comment": {
+            "default": true,
+            "title": "Is Comment",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaComment",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "list_users",
+      "description": "List the people in an Asana workspace.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "query": {
+            "default": "",
+            "description": "Filter users by name fragment",
+            "title": "Query",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "description": "Maximum users to return",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "ListUsersParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "One person in a workspace.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "email": {
+            "default": "",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaUser",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "list_teams",
+      "description": "List the teams in an Asana organization.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "description": "Maximum teams to return",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "ListTeamsParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "One team inside an organization.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaTeam",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "check_access",
+      "description": "Report what this connector can currently reach in Asana, and explain anything missing.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          }
+        },
+        "title": "CheckAccessParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "What the connector can currently reach, and why anything is missing.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "account_name": {
+            "default": "",
+            "title": "Account Name",
+            "type": "string"
+          },
+          "workspace": {
+            "default": "",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "workspace_count": {
+            "default": 0,
+            "title": "Workspace Count",
+            "type": "integer"
+          },
+          "project_count": {
+            "default": 0,
+            "title": "Project Count",
+            "type": "integer"
+          },
+          "reachable_projects": {
+            "default": "",
+            "title": "Reachable Projects",
+            "type": "string"
+          },
+          "user_count": {
+            "default": 0,
+            "title": "User Count",
+            "type": "integer"
+          },
+          "premium_search": {
+            "default": "",
+            "title": "Premium Search",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AccessReport",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "connect_account",
+      "description": "Connect an Asana account by saving its personal access token, after checking the token actually works.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "asana.account.connected"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "description": "The token the user pastes on the Connect screen.\n\nNot WorkspaceScoped: this is the one action that runs BEFORE any workspace\nis known, so asking which workspace to act in would be circular. The\nworkspaces are discovered FROM the token.",
+        "properties": {
+          "token": {
+            "default": "",
+            "description": "Asana personal access token, starts with '2/'. Create one at app.asana.com/0/my-apps.",
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "title": "ConnectAccountParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Outcome of connecting a token -- what got connected, and what is next.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "account_name": {
+            "default": "",
+            "title": "Account Name",
+            "type": "string"
+          },
+          "email": {
+            "default": "",
+            "title": "Email",
+            "type": "string"
+          },
+          "already_connected": {
+            "default": false,
+            "title": "Already Connected",
+            "type": "boolean"
+          },
+          "workspace_count": {
+            "default": 0,
+            "title": "Workspace Count",
+            "type": "integer"
+          },
+          "workspaces": {
+            "default": "",
+            "title": "Workspaces",
+            "type": "string"
+          },
+          "next_step": {
+            "default": "",
+            "title": "Next Step",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "ConnectResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "asana-connector.connect_account",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "create_task",
+      "description": "Create a task in an Asana project, optionally assigned and with a due date.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "asana.task.created"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "name": {
+            "description": "Task title",
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "description": "Task description as plain text",
+            "title": "Notes",
+            "type": "string"
+          },
+          "project": {
+            "default": "",
+            "description": "Project to put the task in (name or gid). Asana requires either a project or an assignee.",
+            "title": "Project",
+            "type": "string"
+          },
+          "section": {
+            "default": "",
+            "description": "Section within the project to place the task in",
+            "title": "Section",
+            "type": "string"
+          },
+          "assignee": {
+            "default": "",
+            "description": "Who to assign it to (name, or 'me')",
+            "title": "Assignee",
+            "type": "string"
+          },
+          "due": {
+            "default": "",
+            "description": "Due date 'YYYY-MM-DD', or a timestamp for a due time",
+            "title": "Due",
+            "type": "string"
+          },
+          "parent": {
+            "default": "",
+            "description": "Make this a subtask of the given task (name or gid)",
+            "title": "Parent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CreateTaskParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Outcome of a write, phrased so the narrator can state what changed.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "action": {
+            "default": "",
+            "title": "Action",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WriteResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "asana-connector.create_task",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "update_task",
+      "description": "Update a task's name, notes, assignee or due date.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "asana.task.updated"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "task": {
+            "description": "Task to update (name or gid)",
+            "title": "Task",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "description": "New title (omit to keep the current one)",
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "description": "Replace the description",
+            "title": "Notes",
+            "type": "string"
+          },
+          "assignee": {
+            "default": "",
+            "description": "Reassign to this person, or 'me'",
+            "title": "Assignee",
+            "type": "string"
+          },
+          "due": {
+            "default": "",
+            "description": "New due date 'YYYY-MM-DD' or timestamp",
+            "title": "Due",
+            "type": "string"
+          },
+          "clear_due": {
+            "default": false,
+            "description": "Remove the due date entirely",
+            "title": "Clear Due",
+            "type": "boolean"
+          },
+          "clear_assignee": {
+            "default": false,
+            "description": "Unassign the task",
+            "title": "Clear Assignee",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "task"
+        ],
+        "title": "UpdateTaskParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Outcome of a write, phrased so the narrator can state what changed.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "action": {
+            "default": "",
+            "title": "Action",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WriteResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "asana-connector.update_task",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "complete_task",
+      "description": "Mark a task complete, or reopen it.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "asana.task.completed"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "task": {
+            "description": "Task to complete (name or gid)",
+            "title": "Task",
+            "type": "string"
+          },
+          "completed": {
+            "default": true,
+            "description": "Set false to reopen a completed task",
+            "title": "Completed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "task"
+        ],
+        "title": "CompleteTaskParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Outcome of a write, phrased so the narrator can state what changed.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "action": {
+            "default": "",
+            "title": "Action",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WriteResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "asana-connector.complete_task",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "move_task",
+      "description": "Move a task to a different project or section.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "asana.task.moved"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "task": {
+            "description": "Task to move (name or gid)",
+            "title": "Task",
+            "type": "string"
+          },
+          "project": {
+            "description": "Destination project (name or gid)",
+            "title": "Project",
+            "type": "string"
+          },
+          "section": {
+            "default": "",
+            "description": "Destination section within that project",
+            "title": "Section",
+            "type": "string"
+          },
+          "remove_from_others": {
+            "default": false,
+            "description": "Remove the task from its other projects",
+            "title": "Remove From Others",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "task",
+          "project"
+        ],
+        "title": "MoveTaskParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Outcome of a write, phrased so the narrator can state what changed.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "action": {
+            "default": "",
+            "title": "Action",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WriteResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "asana-connector.move_task",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "delete_task",
+      "description": "Delete a task. Asana keeps deleted tasks recoverable for 30 days.",
+      "action_type": "destructive",
+      "chain_callable": true,
+      "effects": [
+        "asana.task.deleted"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "task": {
+            "description": "Task to delete (name or gid)",
+            "title": "Task",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task"
+        ],
+        "title": "DeleteTaskParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Outcome of a write, phrased so the narrator can state what changed.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "action": {
+            "default": "",
+            "title": "Action",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WriteResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "asana-connector.delete_task",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "add_comment",
+      "description": "Add a comment to a task.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "asana.comment.created"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "task": {
+            "description": "Task to comment on (name or gid)",
+            "title": "Task",
+            "type": "string"
+          },
+          "comment": {
+            "description": "Comment text",
+            "title": "Comment",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task",
+          "comment"
+        ],
+        "title": "AddCommentParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Outcome of a write, phrased so the narrator can state what changed.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "action": {
+            "default": "",
+            "title": "Action",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WriteResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "asana-connector.add_comment",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "create_project",
+      "description": "Create a project in a workspace or team.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "asana.project.created"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "name": {
+            "description": "Project name",
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "description": "Project description",
+            "title": "Notes",
+            "type": "string"
+          },
+          "team": {
+            "default": "",
+            "description": "Team to own the project (name or gid). Required in an organization; ignored in a personal workspace.",
+            "title": "Team",
+            "type": "string"
+          },
+          "public": {
+            "default": true,
+            "description": "Visible to the whole team (set false for private)",
+            "title": "Public",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CreateProjectParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Outcome of a write, phrased so the narrator can state what changed.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "action": {
+            "default": "",
+            "title": "Action",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WriteResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "asana-connector.create_project",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "create_section",
+      "description": "Add a section (column) to a project.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "asana.section.created"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "project": {
+            "description": "Project to add the section to",
+            "title": "Project",
+            "type": "string"
+          },
+          "name": {
+            "description": "Section name",
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project",
+          "name"
+        ],
+        "title": "CreateSectionParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Outcome of a write, phrased so the narrator can state what changed.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "action": {
+            "default": "",
+            "title": "Action",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WriteResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "asana-connector.create_section",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    }
+  ],
+  "signals": [],
+  "schedules": [],
+  "required_scopes": [],
+  "icon_size_bytes": 289,
+  "lifecycle": {
+    "on_install": true,
+    "health_check": {
+      "interval_sec": 60
+    }
+  },
+  "lifecycle_hooks": {
+    "on_install": {
+      "signature": "(ctx)"
+    }
+  },
+  "secrets": [
+    {
+      "name": "asana_tokens",
+      "description": "Asana personal access token(s) -- one per line, one line per account. Create one at app.asana.com/0/my-apps (Personal access token). A token reaches every workspace its owner belongs to.",
+      "required": true,
+      "write_mode": "both",
+      "max_bytes": 4096,
+      "scope": "user",
+      "rotation_hint_days": 180
+    }
+  ],
+  "panels": [
+    {
+      "panel_id": "secrets",
+      "slot": "right",
+      "title": "Secrets",
+      "tree": {},
+      "icon": "KeyRound",
+      "refresh": "manual",
+      "center_overlay": false
+    },
+    {
+      "panel_id": "asana",
+      "slot": "center",
+      "title": "Asana",
+      "tree": {},
+      "icon": "CheckSquare",
+      "refresh": "manual",
+      "center_overlay": true
+    },
+    {
+      "panel_id": "asana_nav",
+      "slot": "left",
+      "title": "Asana",
+      "tree": {},
+      "icon": "CheckSquare",
+      "refresh": "manual",
+      "center_overlay": false
+    }
+  ]
+}
