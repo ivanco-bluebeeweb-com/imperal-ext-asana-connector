@@ -478,6 +478,14 @@ async def test_update_task_accepts_a_start_when_the_task_already_has_a_due_date(
         task="1201234567", start="2026-08-01"))
     assert _ok(out), _text(out)
 
+    # Asana wants the due date in the SAME request, not merely present on the
+    # task. Found live: this exact call failed with "You must provide `due_on`
+    # or `due_at` when setting `start_on`" on a task that HAD a due date.
+    body = [c for c in http.calls if c["method"] == "PUT"][-1]["json"]["data"]
+    assert body["start_on"] == "2026-08-01"
+    assert body["due_on"] == "2026-08-03", (
+        f"the existing due date must be echoed back: {body}")
+
     body = [c for c in http.calls if c["method"] == "PUT"][-1]["json"]["data"]
     assert body["start_on"] == "2026-08-01"
 

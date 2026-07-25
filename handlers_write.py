@@ -288,14 +288,22 @@ async def update_task(ctx, params: UpdateTaskParams) -> ActionResult:
                 ctx, "GET", f"tasks/{target['gid']}", token,
                 params={"opt_fields": "due_on,due_at"})
             existing = current.get("data") or {} if current.get("ok") else {}
+            existing_due = existing.get("due_on") or existing.get("due_at")
             # If the lookup itself failed, do not invent a verdict -- let the
             # PUT below surface the real reason.
-            if current.get("ok") and not (existing.get("due_on")
-                                          or existing.get("due_at")):
+            if current.get("ok") and not existing_due:
                 return _error(
                     "A start date needs a due date too -- Asana rejects a "
                     "task that starts but never ends. Set a due date as well.",
                     ac.ASANA_VALIDATION_FAILED)
+            # Asana wants the due date in the SAME request as `start_on`, not
+            # merely present on the task: setting a start date on a task that
+            # already had a due date still failed with "You must provide
+            # `due_on` or `due_at` when setting `start_on`". So the existing
+            # value is echoed back unchanged.
+            if existing_due:
+                field = "due_on" if existing.get("due_on") else "due_at"
+                data[field] = existing_due
         data["start_on"] = params.start.strip()
 
     if not data:
