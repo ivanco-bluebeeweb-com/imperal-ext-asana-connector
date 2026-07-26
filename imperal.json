@@ -4345,7 +4345,7 @@
     {
       "path": "/events",
       "method": "POST",
-      "secret_header": ""
+      "secret_header": "X-Hook-Secret"
     }
   ],
   "events": {

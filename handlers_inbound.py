@@ -58,7 +58,10 @@ _resolve = shared.resolve
 @ext.emits(inbound.EVENT_TASK_DELETED)
 @ext.emits(inbound.EVENT_COMMENT_ADDED)
 @ext.emits(inbound.EVENT_PROJECT_CHANGED)
-@ext.webhook("events", method="POST")
+# `secret_header` is declared so the manifest names the header this endpoint
+# negotiates on. The SDK states secret verification stays inside the handler,
+# but declaring it is what tells the gateway which header carries the handshake.
+@ext.webhook("events", method="POST", secret_header="X-Hook-Secret")
 async def asana_events(ctx, headers: dict | None = None, body: str = "",
                        query_params: dict | None = None):
     """Receive one Asana webhook delivery.
