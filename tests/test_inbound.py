@@ -125,6 +125,37 @@ async def test_a_forged_signature_is_refused(ctx):
     assert _status(out) == 401
 
 
+async def test_a_forged_delivery_is_not_ACTED_on(ctx):
+    """The refusal that actually protects anything.
+
+    Asserting only on the 401 turned out to be near-worthless: live probes show
+    the platform does not apply a webhook handler's status code to the wire at
+    all, so a forged caller is told 200 no matter what this handler returns.
+
+    What still holds the line is that nothing is PROCESSED -- no event emitted,
+    so no automation fires on an unverified payload. That is the property worth
+    pinning, and it was untested until now: every existing forgery test checked
+    the status code, i.e. the one thing currently guaranteed not to reach the
+    caller.
+    """
+    await ib.remember_hook(ctx, "hook-1", "real-secret",
+                           resource_gid="3001", resource_name="Launch")
+
+    emitted = []
+
+    async def _emit(name, payload):
+        emitted.append((name, payload))
+
+    ctx.extensions.emit = _emit
+
+    await hi.asana_events(
+        ctx,
+        headers={"X-Hook-Signature": "0" * 64},
+        body=_body([TASK_EVENT]))
+
+    assert emitted == [], f"a forged delivery was acted on: {emitted}"
+
+
 async def test_a_refusal_does_not_reveal_which_check_failed(ctx):
     """Telling an unauthenticated caller WHY helps them forge a better one."""
     await ib.remember_hook(ctx, "hook-1", "real-secret")
