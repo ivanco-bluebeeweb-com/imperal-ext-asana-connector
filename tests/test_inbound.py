@@ -24,6 +24,12 @@ import pytest
 import handlers_inbound as hi
 import inbound as ib
 
+# Reused rather than redefined: `_ok` reads `status`, not `success` -- because
+# ActionResult.success is a classmethod and is therefore ALWAYS truthy, which
+# once made every assertion in this suite pass regardless of outcome.
+from conftest import envelope, error_payload, me_payload
+from test_tools import _ok, _text
+
 pytestmark = pytest.mark.asyncio
 
 
@@ -208,3 +214,41 @@ async def test_a_redelivered_event_is_not_emitted_twice(ctx):
     after_first = len(emitted)
     assert after_first >= 1, emitted
     assert len(emitted) == after_first, f"redelivery emitted again: {emitted}"
+
+
+# --- the handshake blocker is reported honestly ------------------------------
+
+async def test_a_failed_handshake_is_not_blamed_on_the_token(connected_ctx, http):
+    """Asana's wording for this failure actively misleads.
+
+    It says "the remote server did not respond with the handshake secret",
+    which reads like a token or scope problem and is neither: probing the live
+    endpoint showed the handler returning the correct echo, and the platform
+    serialising that response into a JSON body with its headers dropped.
+
+    This test pins the honest explanation in place. Without it the diagnosis is
+    one refactor away from silently reverting to Asana's own misleading text,
+    and the next person re-audits their token for an upstream limitation.
+    """
+    from models import WatchProjectParams
+
+    http.push(envelope(me_payload()))
+    http.push(envelope([{"gid": "3001", "name": "Launch",
+                         "resource_type": "project"}]))
+    # Asana's REAL failure shape: a top-level `errors` array with an HTTP
+    # status, not a pre-made client envelope. Pushing the envelope meant the
+    # request never looked like a failure, so the branch under test was never
+    # reached -- the mock was wrong, not the code.
+    http.push(error_payload(
+        "The remote server which is intended to receive the webhook did not "
+        "respond with the handshake secret."), status=400)
+
+    out = await hi.watch_project(connected_ctx, WatchProjectParams(
+        project="Launch"))
+
+    assert not _ok(out)
+    text = _text(out).lower()
+    # The cause is named...
+    assert "header" in text
+    # ...and the wrong suspects are explicitly cleared.
+    assert "not a token or permission problem" in text

@@ -215,6 +215,26 @@ async def watch_project(ctx, params: WatchProjectParams) -> ActionResult:
 
     out = await ac.request(ctx, "POST", "webhooks", token, data=body)
     if not out.get("ok"):
+        # Asana's own wording for a failed handshake is "the remote server ...
+        # did not respond with the handshake secret", which reads exactly like
+        # a permissions or token problem and is neither. Verified by probing
+        # the live endpoint: the handler DOES return the echo header, and the
+        # platform runtime serialises that response into the JSON body instead
+        # of applying it, so the header never exists on the wire for Asana to
+        # find. Saying so plainly costs one branch and saves the next person
+        # from re-auditing their token and scopes for something upstream.
+        detail = str(out.get("error") or "")
+        if "handshake secret" in detail.lower():
+            return ActionResult.error(
+                "Asana refused the subscription because our events endpoint "
+                "did not echo the handshake secret as an HTTP header. This is "
+                "not a token or permission problem: the endpoint is live and "
+                "returns the correct echo, but the platform currently delivers "
+                "a webhook handler's response as a JSON body and drops its "
+                "headers, so the secret never reaches Asana as a header. "
+                "Everything else in the inbound channel is in place and will "
+                "work once a webhook response can set headers.",
+                code=ac.ASANA_VALIDATION_FAILED)
         return _from_envelope(out)
 
     created = out.get("data") or {}
@@ -426,8 +446,19 @@ async def inbound_status(ctx, params: ListWebhooksParams) -> ActionResult:
                   f"the endpoint below, and each becomes an event automations "
                   f"can trigger on.")
     else:
-        detail = ("The endpoint is live, but no project is being watched yet. "
-                  "Use watch_project to subscribe to one.")
+        # Deliberately blunt about the blocker instead of suggesting
+        # watch_project, which cannot currently succeed: Asana's create call
+        # requires the endpoint to echo X-Hook-Secret as an HTTP HEADER, and
+        # the platform presently returns a webhook handler's response as a
+        # JSON body with its headers dropped. Sending the user to a tool that
+        # will fail with an Asana-worded error is worse than saying so here.
+        detail = ("The endpoint is live and every piece of the inbound channel "
+                  "is in place, but no project can be watched yet: Asana "
+                  "completes a subscription only if the endpoint echoes its "
+                  "handshake secret as an HTTP header, and webhook responses "
+                  "currently reach the wire as a JSON body with headers "
+                  "dropped. This is a platform-side limitation, not an Asana "
+                  "permission or token problem.")
 
     return ActionResult.success(
         InboundStatus(

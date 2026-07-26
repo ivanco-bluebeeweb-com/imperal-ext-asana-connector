@@ -56,6 +56,27 @@ line — for people holding separate personal and client tokens.
 **Destructive** — `delete_task` (confirmation-gated; Asana keeps deleted tasks
 recoverable for 30 days)
 
+### Known blocker: the handshake cannot complete yet
+
+`watch_project` currently fails, and the cause is upstream of this extension.
+Asana completes a subscription only if the endpoint echoes `X-Hook-Secret` as an
+HTTP **header**. Probing the live endpoint shows the handler returning exactly
+the right thing — `{"headers": {"X-Hook-Secret": ...}, "status_code": 200}` —
+but the platform serialises a webhook handler's `WebhookResponse` into the JSON
+*body* and drops its headers, so the secret never reaches the wire as a header.
+`WebhookResponse` is declared and exported by the SDK but read by nothing.
+
+Asana words this as "the remote server did not respond with the handshake
+secret", which reads like a token or scope failure and is neither. Both
+`watch_project` and `inbound_status` say so plainly instead, and a test pins
+that wording in place.
+
+Everything else in the inbound channel — signature verification, heartbeat
+handling, de-duplication, event mapping, subscription management — is built,
+tested and deployed, and starts working the moment a webhook response can set
+headers. Declaring `secret_header="X-Hook-Secret"` in the manifest was tried
+first and does not change the behaviour.
+
 ## Webhooks: three rules that are easy to get wrong
 
 **The secret ARRIVES, it is never pasted.** Asana creates a webhook by POSTing
