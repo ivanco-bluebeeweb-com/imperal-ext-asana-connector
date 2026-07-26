@@ -19,7 +19,12 @@ import ast
 import pathlib
 
 APP_DIR = pathlib.Path(__file__).resolve().parent.parent
-HANDLER_FILES = ["handlers_read.py", "handlers_write.py", "shared.py",
+HANDLER_FILES = ["handlers_read.py", "handlers_write.py",
+                 # Added with the webhook work: a file missing from this list
+                 # is silently exempt from every structural check here, which
+                 # is the same "declared but never verified" shape these tests
+                 # exist to catch.
+                 "handlers_inbound.py", "inbound.py", "shared.py",
                  "accounts.py", "asana_client.py", "panels.py"]
 
 

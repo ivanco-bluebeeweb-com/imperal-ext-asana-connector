@@ -65,6 +65,12 @@ ATTACHMENT_FIELDS = ",".join([
     "size",
 ])
 
+WEBHOOK_FIELDS = ",".join([
+    "gid", "resource_type", "active", "created_at", "last_success_at",
+    "last_failure_at", "last_failure_content", "resource.name", "resource.gid",
+    "target",
+])
+
 USER_FIELDS = "gid,name,email,resource_type"
 
 WORKSPACE_FIELDS = "gid,name,resource_type,is_organization"
@@ -185,6 +191,44 @@ def render_attachment(item) -> str:
     created = str(item.get("created_at") or "")[:10]
     if created:
         parts.append(f"added {created}")
+    return " | ".join(parts)
+
+
+def stamp_to_date(value) -> str:
+    """ISO timestamp -> 'YYYY-MM-DD', empty string for anything unusable."""
+    text = str(value or "")
+    return text[:10] if len(text) >= 10 else ""
+
+
+def render_webhook(hook) -> str:
+    """Human-readable one-line summary of a webhook subscription.
+
+    Leads with whether deliveries are actually ARRIVING, not with whether the
+    row exists. Asana deletes a webhook after 24h of failed deliveries, so a
+    subscription that exists but has never succeeded is the exact state a user
+    needs to see -- and the one a bare "active: true" would hide.
+    """
+    if not isinstance(hook, dict):
+        return ""
+    resource = hook.get("resource")
+    label = name_of(resource) if isinstance(resource, dict) else ""
+    parts = [f"watching {label or '(unnamed resource)'}"]
+
+    last_ok = stamp_to_date(hook.get("last_success_at"))
+    if last_ok:
+        parts.append(f"last delivery {last_ok}")
+    else:
+        parts.append("no delivery yet")
+
+    failure = str(hook.get("last_failure_content") or "").strip()
+    if failure:
+        # Truncated: Asana stores the whole failed response body here, which
+        # can be an entire HTML error page.
+        clipped = failure if len(failure) <= 120 else failure[:120] + "..."
+        parts.append(f"last failure: {clipped}")
+
+    if not hook.get("active", True):
+        parts.append("INACTIVE")
     return " | ".join(parts)
 
 

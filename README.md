@@ -47,8 +47,32 @@ line — for people holding separate personal and client tokens.
 `move_task`, `add_comment`, `create_project`, `create_section`,
 `set_task_dependency`, `set_task_followers`, `set_task_tags`
 
+**Live updates** — `watch_project`, `list_webhooks`, `unwatch`,
+`inbound_status`. Asana pushes changes to
+`POST /v1/ext/asana-connector/webhook/events`, which emits
+`task_added`, `task_changed`, `task_completed`, `task_deleted`,
+`comment_added` and `project_changed` for automations to react to.
+
 **Destructive** — `delete_task` (confirmation-gated; Asana keeps deleted tasks
 recoverable for 30 days)
+
+## Webhooks: three rules that are easy to get wrong
+
+**The secret ARRIVES, it is never pasted.** Asana creates a webhook by POSTing
+a new `X-Hook-Secret` to the endpoint and blocking the create call until that
+header is echoed back. So the handshake is answered *before* any signature
+check — at that moment no stored secret exists, because that request is the
+secret arriving. Verifying first would reject the delivery that establishes
+every later one, and creation would always time out.
+
+**A heartbeat is load-bearing.** Asana pings every 8 hours with an empty event
+list and deletes the webhook after 24 hours with no successful response. An
+endpoint that skips empty payloads works for a day, then goes dead silently.
+
+**Asana does not say which webhook a delivery belongs to.** There is no gid in
+the headers — only a signature. The delivery is matched by trying each stored
+secret, which doubles as authentication: a body no stored secret verifies is
+not from Asana.
 
 ## Asana constraints worth knowing
 

@@ -290,6 +290,56 @@ class AsanaWorkspaceList(sdl.EntityList[AsanaWorkspace]):
     pass
 
 
+class AsanaWebhook(sdl.Entity):
+    """One active webhook subscription."""
+    gid: str = ""
+    resource_name: str = ""
+    resource_gid: str = ""
+    active: bool = True
+    # "exists" and "is alive" are different facts. Asana silently deletes a
+    # webhook after 24h without a successful response, so the last delivery
+    # time is the only honest evidence a subscription still works.
+    last_delivery: str = ""
+    created: str = ""
+    summary: str = ""
+
+
+class AsanaWebhookList(sdl.EntityList[AsanaWebhook]):
+    pass
+
+
+class InboundStatus(sdl.Entity):
+    """Whether this app can receive Asana pushes at all."""
+    endpoint_url: str = ""
+    webhooks_active: int = 0
+    ready: bool = False
+    detail: str = ""
+    events_emitted: str = ""
+    summary: str = ""
+
+
+class WatchProjectParams(WorkspaceScoped):
+    project: str = Field(
+        ..., description="Project name or gid to watch for changes")
+    # Asana can filter server-side, which is worth using: an unfiltered
+    # subscription on a busy project delivers every field edit on every task.
+    tasks_only: bool = Field(
+        True,
+        description="Only notify about tasks and comments, not every "
+                    "project-level edit")
+
+
+class ListWebhooksParams(WorkspaceScoped):
+    limit: int = Field(50, ge=1, le=100,
+                       description="Maximum webhooks to return")
+
+
+class UnwatchParams(WorkspaceScoped):
+    webhook: str = Field(
+        ...,
+        description="Webhook gid to remove, or the project name it watches")
+
+
 class AsanaTask(sdl.Entity):
     """One Asana task, flattened for display."""
     gid: str = ""

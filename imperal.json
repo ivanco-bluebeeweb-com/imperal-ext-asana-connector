@@ -3738,12 +3738,639 @@
       "long_running": false,
       "scopes": [],
       "owner_chat_tool": "asana"
+    },
+    {
+      "name": "watch_project",
+      "description": "Get notified when a project changes -- new tasks, completions, comments. Sets up a live subscription so automations can react without polling.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "asana.webhook.created"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "project": {
+            "description": "Project name or gid to watch for changes",
+            "title": "Project",
+            "type": "string"
+          },
+          "tasks_only": {
+            "default": true,
+            "description": "Only notify about tasks and comments, not every project-level edit",
+            "title": "Tasks Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "project"
+        ],
+        "title": "WatchProjectParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "One active webhook subscription.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "resource_name": {
+            "default": "",
+            "title": "Resource Name",
+            "type": "string"
+          },
+          "resource_gid": {
+            "default": "",
+            "title": "Resource Gid",
+            "type": "string"
+          },
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "last_delivery": {
+            "default": "",
+            "title": "Last Delivery",
+            "type": "string"
+          },
+          "created": {
+            "default": "",
+            "title": "Created",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaWebhook",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "asana-connector.watch_project",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "list_webhooks",
+      "description": "List active Asana subscriptions -- which projects are being watched.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "description": "Maximum webhooks to return",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "ListWebhooksParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "One active webhook subscription.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "resource_name": {
+            "default": "",
+            "title": "Resource Name",
+            "type": "string"
+          },
+          "resource_gid": {
+            "default": "",
+            "title": "Resource Gid",
+            "type": "string"
+          },
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "last_delivery": {
+            "default": "",
+            "title": "Last Delivery",
+            "type": "string"
+          },
+          "created": {
+            "default": "",
+            "title": "Created",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaWebhook",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "unwatch",
+      "description": "Stop getting notified about a project. Removes the subscription.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "asana.webhook.deleted"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "webhook": {
+            "description": "Webhook gid to remove, or the project name it watches",
+            "title": "Webhook",
+            "type": "string"
+          }
+        },
+        "required": [
+          "webhook"
+        ],
+        "title": "UnwatchParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "One active webhook subscription.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "gid": {
+            "default": "",
+            "title": "Gid",
+            "type": "string"
+          },
+          "resource_name": {
+            "default": "",
+            "title": "Resource Name",
+            "type": "string"
+          },
+          "resource_gid": {
+            "default": "",
+            "title": "Resource Gid",
+            "type": "string"
+          },
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "last_delivery": {
+            "default": "",
+            "title": "Last Delivery",
+            "type": "string"
+          },
+          "created": {
+            "default": "",
+            "title": "Created",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AsanaWebhook",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "asana-connector.unwatch",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
+    },
+    {
+      "name": "inbound_status",
+      "description": "Report whether Asana can push changes to this app -- endpoint, active subscriptions, and what events they produce.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "workspace": {
+            "default": "",
+            "description": "Workspace or organization name, e.g. 'Acme'. Omit when the account reaches only one workspace.",
+            "title": "Workspace",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "description": "Maximum webhooks to return",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "ListWebhooksParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Whether this app can receive Asana pushes at all.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "endpoint_url": {
+            "default": "",
+            "title": "Endpoint Url",
+            "type": "string"
+          },
+          "webhooks_active": {
+            "default": 0,
+            "title": "Webhooks Active",
+            "type": "integer"
+          },
+          "ready": {
+            "default": false,
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "events_emitted": {
+            "default": "",
+            "title": "Events Emitted",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "InboundStatus",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "asana"
     }
   ],
   "signals": [],
   "schedules": [],
   "required_scopes": [],
   "icon_size_bytes": 289,
+  "webhooks": [
+    {
+      "path": "/events",
+      "method": "POST",
+      "secret_header": ""
+    }
+  ],
+  "events": {
+    "subscribes": [],
+    "emits": [
+      {
+        "type": "asana-connector.project_changed"
+      },
+      {
+        "type": "asana-connector.comment_added"
+      },
+      {
+        "type": "asana-connector.task_deleted"
+      },
+      {
+        "type": "asana-connector.task_completed"
+      },
+      {
+        "type": "asana-connector.task_changed"
+      },
+      {
+        "type": "asana-connector.task_added"
+      }
+    ]
+  },
   "lifecycle": {
     "on_install": true,
     "health_check": {
