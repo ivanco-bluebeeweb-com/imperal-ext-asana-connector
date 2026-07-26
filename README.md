@@ -58,24 +58,42 @@ recoverable for 30 days)
 
 ### Known blocker: the handshake cannot complete yet
 
-`watch_project` currently fails, and the cause is upstream of this extension.
-Asana completes a subscription only if the endpoint echoes `X-Hook-Secret` as an
-HTTP **header**. Probing the live endpoint shows the handler returning exactly
-the right thing — `{"headers": {"X-Hook-Secret": ...}, "status_code": 200}` —
-but the platform serialises a webhook handler's `WebhookResponse` into the JSON
-*body* and drops its headers, so the secret never reaches the wire as a header.
-`WebhookResponse` is declared and exported by the SDK but read by nothing.
+`watch_project` currently fails, and the cause is upstream of this extension:
+**the webhook layer does not apply a handler's response to the wire.**
 
-Asana words this as "the remote server did not respond with the handshake
-secret", which reads like a token or scope failure and is neither. Both
-`watch_project` and `inbound_status` say so plainly instead, and a test pins
-that wording in place.
+Asana completes a subscription only if the endpoint echoes `X-Hook-Secret` as an
+HTTP **header**. The handler does return it. Two live probes show what happens:
+
+| handler returns | wire status | wire headers | wire body |
+|---|---|---|---|
+| `{"status_code": 200, "headers": {"X-Hook-Secret": …}}` | 200 | *no echo* | the dict, verbatim |
+| `{"status_code": 401, "body": "unauthorised"}` | **200** | — | the dict, verbatim |
+
+The second row is the decisive one: the docs state *“return `{"status_code": N,
+…}` to control HTTP status”*, and it does not — a refusal answered as 401 is
+delivered as 200. So this is not about headers specifically, and not about
+`WebhookResponse` (a type the SDK declares, exports, and references nowhere).
+The documented response contract is simply not implemented; the return value is
+serialised as the body.
+
+Two things were tried first and ruled out by probe: declaring
+`secret_header="X-Hook-Secret"` in the manifest, and returning the documented
+plain dict instead of `WebhookResponse`.
+
+Asana words the failure as “the remote server did not respond with the handshake
+secret”, which reads like a token or scope failure and is neither. Both
+`watch_project` and `inbound_status` say so plainly instead, and a test pins that
+wording in place.
 
 Everything else in the inbound channel — signature verification, heartbeat
 handling, de-duplication, event mapping, subscription management — is built,
-tested and deployed, and starts working the moment a webhook response can set
-headers. Declaring `secret_header="X-Hook-Secret"` in the manifest was tried
-first and does not change the behaviour.
+tested and deployed, and starts working the moment a webhook response is applied
+to the wire.
+
+> Note for whoever fixes the platform: until then, a webhook endpoint cannot
+> refuse anything with a non-200 status. This connector still *processes*
+> nothing it cannot verify, so no forged delivery is acted on — but the caller
+> is told 200 regardless.
 
 ## Webhooks: three rules that are easy to get wrong
 

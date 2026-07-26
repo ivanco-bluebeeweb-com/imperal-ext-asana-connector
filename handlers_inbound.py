@@ -223,22 +223,26 @@ async def watch_project(ctx, params: WatchProjectParams) -> ActionResult:
         # Asana's own wording for a failed handshake is "the remote server ...
         # did not respond with the handshake secret", which reads exactly like
         # a permissions or token problem and is neither. Verified by probing
-        # the live endpoint: the handler DOES return the echo header, and the
-        # platform runtime serialises that response into the JSON body instead
-        # of applying it, so the header never exists on the wire for Asana to
-        # find. Saying so plainly costs one branch and saves the next person
-        # from re-auditing their token and scopes for something upstream.
+        # the live endpoint twice: the handler DOES return the echo, and the
+        # webhook layer applies NONE of a handler's response contract -- a
+        # handler answering 401 is still delivered as 200, so the documented
+        # `status_code` key does not work either. The response is serialised as
+        # the body and nothing reaches the wire. Saying so plainly costs one
+        # branch and saves the next person from re-auditing a token and scopes
+        # for something upstream of them.
         detail = str(out.get("error") or "")
         if "handshake secret" in detail.lower():
             return ActionResult.error(
                 "Asana refused the subscription because our events endpoint "
                 "did not echo the handshake secret as an HTTP header. This is "
                 "not a token or permission problem: the endpoint is live and "
-                "returns the correct echo, but the platform currently delivers "
-                "a webhook handler's response as a JSON body and drops its "
-                "headers, so the secret never reaches Asana as a header. "
-                "Everything else in the inbound channel is in place and will "
-                "work once a webhook response can set headers.",
+                "returns the correct echo. The platform's webhook layer "
+                "currently ignores a handler's response contract entirely -- "
+                "probes confirm neither the headers NOR the status code reach "
+                "the wire (a handler answering 401 is still delivered as 200), "
+                "so the secret cannot reach Asana as a header. Everything else "
+                "in the inbound channel is built and tested, and starts "
+                "working once a webhook response is applied to the wire.",
                 code=ac.ASANA_VALIDATION_FAILED)
         return _from_envelope(out)
 
@@ -460,10 +464,11 @@ async def inbound_status(ctx, params: ListWebhooksParams) -> ActionResult:
         detail = ("The endpoint is live and every piece of the inbound channel "
                   "is in place, but no project can be watched yet: Asana "
                   "completes a subscription only if the endpoint echoes its "
-                  "handshake secret as an HTTP header, and webhook responses "
-                  "currently reach the wire as a JSON body with headers "
-                  "dropped. This is a platform-side limitation, not an Asana "
-                  "permission or token problem.")
+                  "handshake secret as an HTTP header, and the platform's "
+                  "webhook layer does not currently apply a handler's response "
+                  "to the wire -- neither its headers nor its status code. "
+                  "This is a platform-side limitation, not an Asana permission "
+                  "or token problem.")
 
     return ActionResult.success(
         InboundStatus(
