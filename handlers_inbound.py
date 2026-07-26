@@ -29,7 +29,6 @@ delivery at all, and refusing it is the correct final answer.
 from __future__ import annotations
 
 from imperal_sdk import ActionResult
-from imperal_sdk.types import WebhookResponse
 
 import asana_client as ac
 import asana_objects as ao
@@ -66,9 +65,10 @@ async def asana_events(ctx, headers: dict | None = None, body: str = "",
                        query_params: dict | None = None):
     """Receive one Asana webhook delivery.
 
-    Returns a WebhookResponse rather than a bare string, because the handshake
-    reply lives in a HEADER -- a body-only response cannot establish a webhook
-    at all.
+    Returns a plain dict, which is the documented webhook contract: the
+    runtime reads `status_code` off the returned dict. The handshake reply
+    lives in a HEADER -- a body-only response cannot establish a webhook at
+    all -- so `headers` is passed the same way.
     """
     headers = headers or {}
 
@@ -81,9 +81,14 @@ async def asana_events(ctx, headers: dict | None = None, body: str = "",
     if offered:
         await inbound.park_handshake(ctx, offered)
         await ctx.log("Asana webhook handshake answered", level="info")
-        return WebhookResponse(
-            status_code=200, body="",
-            headers={"X-Hook-Secret": offered})
+        # A PLAIN DICT, not WebhookResponse. The documented contract is
+        # "return {"status_code": N, ...} to control HTTP status" -- the
+        # runtime reads keys off a returned DICT. WebhookResponse is declared
+        # in the SDK and referenced by nothing, and a live probe showed it
+        # being serialised into the response body, which is exactly how the
+        # echo header went missing.
+        return {"status_code": 200, "body": "",
+                "headers": {"X-Hook-Secret": offered}}
 
     # 2. SIGNATURE. Asana does not name the webhook a delivery belongs to, so
     #    finding the stored secret that reproduces the signature is both the
@@ -94,7 +99,7 @@ async def asana_events(ctx, headers: dict | None = None, body: str = "",
         # caller WHY their signature failed helps them forge a better one.
         await ctx.log(f"Asana delivery rejected: {verdict['code']}",
                       level="warn")
-        return WebhookResponse(status_code=401, body="unauthorised")
+        return {"status_code": 401, "body": "unauthorised"}
 
     hook = verdict.get("hook") or {}
     payload = inbound.parse_body(body)
@@ -103,11 +108,11 @@ async def asana_events(ctx, headers: dict | None = None, body: str = "",
     #    alive. Answering 200 is what stops it deleting the subscription.
     if inbound.is_heartbeat(payload):
         await inbound.touch_hook(ctx, str(hook.get("webhook_gid") or ""))
-        return WebhookResponse(status_code=200, body="ok")
+        return {"status_code": 200, "body": "ok"}
 
     events = payload.get("events")
     if not isinstance(events, list):
-        return WebhookResponse(status_code=200, body="ignored")
+        return {"status_code": 200, "body": "ignored"}
 
     emitted = 0
     for raw in events:
@@ -163,7 +168,7 @@ async def asana_events(ctx, headers: dict | None = None, body: str = "",
     await ctx.log(
         f"Asana delivery: {len(events)} event(s) in, {emitted} emitted",
         level="info")
-    return WebhookResponse(status_code=200, body="ok")
+    return {"status_code": 200, "body": "ok"}
 
 
 # --------------------------- subscription tools ----------------------------
