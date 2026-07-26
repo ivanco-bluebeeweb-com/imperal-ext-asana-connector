@@ -33,6 +33,33 @@ from test_tools import _ok, _text
 pytestmark = pytest.mark.asyncio
 
 
+def _status(reply) -> int:
+    """HTTP status from a webhook reply, whatever shape it takes.
+
+    The handler returns the DOCUMENTED plain dict, but reading `["status_code"]`
+    directly in every assertion would mean rewriting all of them the next time
+    the contract shifts. This reads either shape, so the tests assert on
+    BEHAVIOUR (what status the caller sees) rather than on packaging.
+    """
+    if isinstance(reply, dict):
+        return int(reply.get("status_code") or 0)
+    return int(getattr(reply, "status_code", 0) or 0)
+
+
+def _reply_headers(reply) -> dict:
+    """Response headers from a webhook reply, whatever shape it takes."""
+    if isinstance(reply, dict):
+        return reply.get("headers") or {}
+    return getattr(reply, "headers", None) or {}
+
+
+def _reply_body(reply) -> str:
+    """Response body from a webhook reply, whatever shape it takes."""
+    if isinstance(reply, dict):
+        return str(reply.get("body") or "")
+    return str(getattr(reply, "body", "") or "")
+
+
 def _sign(body: str, secret: str) -> str:
     return hmac.new(secret.encode(), body.encode(), hashlib.sha256).hexdigest()
 
@@ -64,9 +91,9 @@ async def test_handshake_is_echoed_in_a_response_header(ctx):
     out = await hi.asana_events(
         ctx, headers={"X-Hook-Secret": "handshake-secret-42"}, body="{}")
 
-    assert out.status_code == 200
-    echoed = {k.lower(): v for k, v in (out.headers or {}).items()}
-    assert echoed.get("x-hook-secret") == "handshake-secret-42", out.headers
+    assert _status(out) == 200
+    echoed = {k.lower(): v for k, v in (_reply_headers(out) or {}).items()}
+    assert echoed.get("x-hook-secret") == "handshake-secret-42", _reply_headers(out)
 
 
 async def test_the_handshake_secret_is_kept_for_later_delivery(ctx):
@@ -95,7 +122,7 @@ async def test_a_forged_signature_is_refused(ctx):
         headers={"X-Hook-Signature": "0" * 64},
         body=_body([TASK_EVENT]))
 
-    assert out.status_code == 401
+    assert _status(out) == 401
 
 
 async def test_a_refusal_does_not_reveal_which_check_failed(ctx):
@@ -105,9 +132,9 @@ async def test_a_refusal_does_not_reveal_which_check_failed(ctx):
     out = await hi.asana_events(
         ctx, headers={"X-Hook-Signature": "0" * 64}, body=_body([TASK_EVENT]))
 
-    text = json.dumps(out.body).lower()
+    text = json.dumps(_reply_body(out)).lower()
     for leak in ("secret", "hmac", "expected", "mismatch", "sha256"):
-        assert leak not in text, f"response leaked '{leak}': {out.body}"
+        assert leak not in text, f"response leaked '{leak}': {_reply_body(out)}"
 
 
 async def test_a_valid_signature_is_accepted_and_emits(ctx):
@@ -129,7 +156,7 @@ async def test_a_valid_signature_is_accepted_and_emits(ctx):
     out = await hi.asana_events(
         ctx, headers={"X-Hook-Signature": _sign(body, "sekret")}, body=body)
 
-    assert out.status_code == 200
+    assert _status(out) == 200
     assert emitted, "a signed, non-duplicate event must be emitted"
 
     names = [name for name, _ in emitted]
@@ -166,7 +193,7 @@ async def test_the_signature_is_checked_against_the_raw_body(ctx):
     out = await hi.asana_events(
         ctx, headers={"X-Hook-Signature": _sign(body, "sekret")}, body=body)
 
-    assert out.status_code == 200, "raw-body signature must verify"
+    assert _status(out) == 200, "raw-body signature must verify"
 
 
 # --- heartbeat ---------------------------------------------------------------
@@ -182,7 +209,7 @@ async def test_an_empty_heartbeat_is_answered_200(ctx):
     out = await hi.asana_events(
         ctx, headers={"X-Hook-Signature": _sign(body, "sekret")}, body=body)
 
-    assert out.status_code == 200
+    assert _status(out) == 200
 
 
 # --- de-duplication ----------------------------------------------------------
@@ -208,7 +235,7 @@ async def test_a_redelivered_event_is_not_emitted_twice(ctx):
     first = await hi.asana_events(ctx, headers=headers, body=body)
     second = await hi.asana_events(ctx, headers=headers, body=body)
 
-    assert first.status_code == 200 and second.status_code == 200
+    assert _status(first) == 200 and _status(second) == 200
     # The first delivery legitimately emits two names (changed + completed);
     # what must NOT happen is the SECOND delivery adding any more.
     after_first = len(emitted)
