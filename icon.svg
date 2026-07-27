@@ -1,6 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect x="2" y="2" width="60" height="60" rx="14" fill="#111827"/>
-  <circle cx="32" cy="23" r="8.5" fill="#f06a6a"/>
-  <circle cx="21" cy="41" r="8.5" fill="#f06a6a"/>
-  <circle cx="43" cy="41" r="8.5" fill="#f06a6a"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img"
+     aria-label="Asana">
+  <!-- The Asana three-dot mark in its brand coral.
+
+       No background plate here, unlike the Notion icon: coral (#F06A6A) has
+       enough contrast on both light and dark panels, so a transparent
+       background is both authentic to the brand and readable either way.
+       Adding a plate would be inventing a logo Asana does not use. -->
+  <circle cx="12" cy="6.75" r="4.55" fill="#F06A6A"/>
+  <circle cx="6.3" cy="16.05" r="4.55" fill="#F06A6A"/>
+  <circle cx="17.7" cy="16.05" r="4.55" fill="#F06A6A"/>
 </svg>
