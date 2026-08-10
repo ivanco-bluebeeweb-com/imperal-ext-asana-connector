@@ -1,6 +1,6 @@
 {
   "manifest_schema_version": 3,
-  "sdk_version": "5.9.12",
+  "sdk_version": "5.9.13",
   "app_id": "asana-connector",
   "version": "1.0.0",
   "name": "Asana Connector",
@@ -4340,7 +4340,7 @@
   "signals": [],
   "schedules": [],
   "required_scopes": [],
-  "icon_size_bytes": 289,
+  "icon_size_bytes": 617,
   "webhooks": [
     {
       "path": "/events",
