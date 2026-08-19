@@ -897,3 +897,92 @@ async def test_no_attachments_is_a_clear_answer_not_an_empty_list(
     assert _ok(out)
     assert out.data.total == 0
     assert "no files" in _text(out).lower(), _text(out)
+
+
+# --- Part D2 (SCENARIO_TESTING_STANDARD.md): idempotency / double-invocation -
+
+async def test_delete_task_twice_fails_clean_on_the_second_call(connected_ctx, http):
+    """A retried chat turn (timeout, double-click) must not crash or lie on
+    the second delete -- the task is already gone, so the second resolve_task
+    lookup finds nothing and the tool must say so, not attempt a DELETE on a
+    gid it never confirmed exists."""
+    # First call: resolve + delete succeeds normally.
+    http.push(envelope(me_payload()))
+    http.push(envelope([task_payload(gid="1201")]))
+    http.push(envelope({}))
+    first = await hw.delete_task(connected_ctx, DeleteTaskParams(task="Ship the landing page"))
+    assert _ok(first)
+    assert http.calls[-1]["method"] == "DELETE"
+
+    # Second call: Asana's typeahead now returns nothing for the same name --
+    # the resolve step must fail closed, not fall through to a stale gid.
+    http.push(envelope(me_payload()))
+    http.push(envelope([]))
+    second = await hw.delete_task(connected_ctx, DeleteTaskParams(task="Ship the landing page"))
+    assert not _ok(second)
+    # No second DELETE was attempted -- the tool stopped at resolution.
+    assert not any(c["method"] == "DELETE" for c in http.calls[3:])
+
+
+async def test_set_task_dependency_twice_is_all_or_nothing_both_times(connected_ctx, http):
+    """set_task_dependency aborts BEFORE writing if any named blocker fails to
+    resolve (see its docstring: 'half-built dependency chain is harder to
+    notice than a refusal'). Calling it twice with the same params must
+    preserve that guarantee on the SECOND call too, not just the first --
+    a retried call must not partially apply if one dependency now fails to
+    resolve (e.g. renamed/completed between calls)."""
+    from models import TaskDependencyParams
+
+    # First call: both blockers resolve, dependency link written once, and
+    # the mandatory read-back check confirms the dependency actually stuck
+    # (see set_task_dependency's own docstring on the free-plan silent-drop).
+    http.push(envelope(me_payload()))
+    http.push(envelope([task_payload(gid="1201", name="Ship the landing page")]))
+    http.push(envelope([task_payload(gid="1300", name="Design review")]))
+    http.push(envelope({}))
+    http.push(envelope({"dependencies": [{"gid": "1300"}]}))
+    first = await hw.set_task_dependency(connected_ctx, TaskDependencyParams(
+        task="Ship the landing page", depends_on="Design review"))
+    assert _ok(first), _text(first)
+    assert http.calls[-1]["method"] == "GET"
+    calls_after_first = len(http.calls)
+
+    # Second, identical call: the blocker task no longer resolves (e.g. it was
+    # completed and archived out of typeahead in between) -- must abort with
+    # an error and make NO write, not silently succeed or half-apply.
+    http.push(envelope(me_payload()))
+    http.push(envelope([task_payload(gid="1201", name="Ship the landing page")]))
+    http.push(envelope([]))
+    second = await hw.set_task_dependency(connected_ctx, TaskDependencyParams(
+        task="Ship the landing page", depends_on="Design review"))
+    assert not _ok(second)
+    assert not any(c["method"] == "POST" for c in http.calls[calls_after_first:])
+
+
+# --- Part D3 (SCENARIO_TESTING_STANDARD.md): security / SSRF surface -------
+
+async def test_no_ssrf_surface_no_user_supplied_url_fields_exist():
+    """Security review, not a runtime test: this checks INPUT (*Params)
+    models only -- output models legitimately carry `.url` (Asana's own
+    permalink_url / webhook delivery url echoed back), which is not an SSRF
+    surface since this app's own code never fetches those. What matters is
+    whether any chat.function PARAMETER lets a caller name an arbitrary
+    address for this app's own code to fetch -- grep/introspection here finds
+    none: every write is scoped to Asana's own fixed API host via
+    asana_client.py. Classic SSRF (internal IPs, cloud metadata,
+    redirect-to-localhost) has no entry point here. Documented as a
+    regression trip-wire: if a future function adds a user-supplied URL
+    field (e.g. an attachment-by-URL feature), this assertion's premise
+    changes and a real SSRF-probe test must be added then.
+    """
+    import inspect
+    import models
+    url_like_fields = []
+    for name, cls in inspect.getmembers(models, inspect.isclass):
+        if not name.endswith("Params") or not hasattr(cls, "model_fields"):
+            continue
+        for field_name in cls.model_fields:
+            if "url" in field_name.lower():
+                url_like_fields.append(f"{name}.{field_name}")
+    assert url_like_fields == [], (
+        f"New URL-shaped input field(s) found: {url_like_fields} -- SSRF review needed.")
