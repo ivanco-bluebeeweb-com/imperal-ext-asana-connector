@@ -4421,5 +4421,45 @@
       "refresh": "manual",
       "center_overlay": false
     }
-  ]
+  ],
+  "pricing": {
+    "model": "per_action",
+    "currency": "credits",
+    "monthly_price": 0,
+    "free_tools": [
+      "connect_account"
+    ],
+    "tool_prices": {
+      "connect_account": 0,
+      "list_accounts": 8,
+      "list_workspaces": 8,
+      "search": 8,
+      "search_tasks": 8,
+      "list_projects": 8,
+      "list_tasks": 8,
+      "get_task": 8,
+      "list_sections": 8,
+      "list_comments": 8,
+      "list_users": 8,
+      "list_teams": 8,
+      "check_access": 8,
+      "list_attachments": 8,
+      "list_webhooks": 8,
+      "inbound_status": 8,
+      "create_task": 16,
+      "update_task": 16,
+      "complete_task": 16,
+      "move_task": 16,
+      "delete_task": 16,
+      "add_comment": 16,
+      "create_project": 16,
+      "create_section": 16,
+      "set_task_dependency": 16,
+      "set_task_followers": 16,
+      "set_task_tags": 16,
+      "watch_project": 16,
+      "unwatch": 16
+    },
+    "notes": "Fixed platform scale {0, 8, 16, 20, 40, 60}. 0 = access setup (connect_account, not an Asana API operation). 8 = any read (list_*/search*/get_task/check_access/inbound_status). 16 = standard single write/CRUD action (create/update/complete/move/delete a task, comments, dependencies, followers, tags, project/section creation, webhook subscribe/unsubscribe). No 20/40/60 tier: this app has no now-running-real-work action, no heavy aggregation report, and no bulk_* function. revenue_split_dev=95 (partner tier, consistent with MuleSoft/Workato pricing set the same day)."
+  }
 }
