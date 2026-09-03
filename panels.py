@@ -29,6 +29,9 @@ storing it. Two lessons are baked into that choice:
 
 * A panel form's ``action=`` resolves against the functions of the extension
   that rendered the panel. The docs recipe shows
+  ui.Button("Connect with Asana (OAuth 2.0)", variant="primary", size="sm", full_width=True, icon="login"),
+  ui.Divider(),
+  ui.Text("Or connect via Personal Access Token", variant="caption"),
   ``ui.Form(action="save_app_secret")``, but that action belongs to the
   *developer* extension, so clicking it dies with "Function not found".
 * Declaring the secret ``write_mode="user"`` (as Notion's did at first) makes
