@@ -29,7 +29,7 @@ storing it. Two lessons are baked into that choice:
 
 * A panel form's ``action=`` resolves against the functions of the extension
   that rendered the panel. The docs recipe shows
-  ui.Button("Connect with Asana (OAuth 2.0)", variant="primary", size="sm", full_width=True, icon="login"),
+  ui.Button("Connect with Asana (OAuth 2.0)", variant="primary", size="sm", icon="login"),
   ui.Divider(),
   ui.Text("Or connect via Personal Access Token", variant="caption"),
   ``ui.Form(action="save_app_secret")``, but that action belongs to the
@@ -443,8 +443,8 @@ async def asana_nav(ctx, **kwargs):
     SKETCH -- left nav panel
       ui.Stack (v, gap=2)
         ui.Text(content=<state>, variant="body")
-        ui.Button("Connect Asana" | "Open Asana panel", full_width=True)
-        ui.Button("My tasks", variant="ghost", full_width=True)
+        ui.Button("Connect Asana" | "Open Asana panel")
+        ui.Button("My tasks", variant="ghost")
 
     Deliberately tiny: the sidebar is for orientation, not for data. The first
     button changes with state -- an unconfigured app should offer the ONE action
@@ -462,7 +462,6 @@ async def asana_nav(ctx, **kwargs):
         primary = ui.Button(
             label="Connect Asana",
             variant="primary",
-            full_width=True,
             on_click=ui.Call("__panel__asana", view="connect"),
         )
     else:
@@ -470,7 +469,6 @@ async def asana_nav(ctx, **kwargs):
         primary = ui.Button(
             label="Open Asana panel",
             variant="secondary",
-            full_width=True,
             on_click=ui.Call("__panel__asana", view="accounts"),
         )
 
@@ -483,7 +481,6 @@ async def asana_nav(ctx, **kwargs):
             ui.Button(
                 label="My tasks",
                 variant="ghost",
-                full_width=True,
                 on_click=ui.Send("Show my Asana tasks"),
             ),
         ],
